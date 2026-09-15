@@ -1,88 +1,130 @@
-# TraceGenie Community
+<div align="center">
+  <img src="apps/admin/public/tracegenie-logo-official.png" alt="TraceGenie" width="240" />
+  <h1>Your users found the bug. Give them a way to show you.</h1>
+  <p><strong>Self-hosted bug reporting, screenshots, and conversations for the apps you ship.</strong></p>
+  <p><a href="#get-started">Get started</a> · <a href="docs/SELF_HOSTING.md">Self-hosting</a> · <a href="docs/EMAIL.md">Email setup</a> · <a href="CONTRIBUTING.md">Contribute</a></p>
+</div>
 
-The existing TraceGenie consumer app and widget, extracted for **one project per installation**. It retains the original screens, design system, screenshot capture and privacy editor, issue workflow, comments, attachments, notifications, and secure reporter replies.
+TraceGenie Community puts a report button inside your app. Users explain what went wrong, attach a screenshot, and send useful context straight to your issue inbox. You triage it, ask a follow-up question, and let them know when it is fixed.
 
-## Install for self-hosting
+**One project. Your server. A complete path from “this feels broken” to resolved.**
 
-Use the Docker release installer. It starts the full application from prebuilt images, creates your owner account in the browser, and includes backup, restore and upgrade commands. See [the self-hosting guide](docs/SELF_HOSTING.md). Release archives are prepared locally; public GitHub/registry distribution is not configured yet.
+![Report a problem from inside your app with the TraceGenie widget](docs/images/report-form.png)
 
-## Run locally (development)
+*Actual Community screens with synthetic demonstration data.*
 
-Install Node 24 and Docker, then run:
+## Built fast? Make feedback part of the app.
+
+AI can help you ship a feature before lunch. It cannot tell you that a real user expected the total to update, could not find the next button, or saw a layout break on their phone.
+
+If you vibe code, the next prompt is only as useful as the evidence you give it. “Checkout is broken” starts a guessing game. A screenshot, the page URL, what the user expected, and the browser context give you a concrete problem to investigate.
+
+TraceGenie helps you collect that evidence and keep the conversation attached to the issue. Review and share the relevant, redacted details with your coding assistant, reproduce the problem, fix it, and close the loop with the reporter. Community does not automatically send reports to an AI provider or generate fixes.
+
+> **Example:** “I changed the quantity from 1 to 3, but the total stayed the same.”
+> That can be a real bug even when no exception is thrown. Let the person who noticed it show you.
+
+## From report to resolution
+
+| Step | What you get |
+| --- | --- |
+| **Capture** | An embedded widget or hosted feedback form; screenshots with a privacy editor and attachments. |
+| **Understand** | The user's description, page and browser context, plus the evidence sources enabled for your project. |
+| **Triage** | A searchable issue list with filters, severity, ownership, status history, comments, and duplicate marking. |
+| **Reply** | A secure reporter page and replies attached to the original report. |
+| **Resolve** | Track the fix and keep the person who reported it informed. |
+
+![The Community issue inbox](docs/images/issues.png)
+
+## Where it fits alongside Sentry and PostHog
+
+These products overlap. Choose the workflow you need; you may already have enough in your existing stack.
+
+| Tool | A useful starting point when you need… |
+| --- | --- |
+| **TraceGenie Community** | A focused, self-hosted workflow for a user-reported issue: capture evidence, triage it, talk to the reporter, and resolve it. |
+| **Sentry** | Application errors and debugging context. It also has a [user feedback widget](https://sentry.io/changelog/user-feedback-widget-is-now-ga/) that accepts user-initiated reports. |
+| **PostHog** | Product analytics, replay, [surveys and qualitative feedback](https://posthog.com/docs/surveys), and [error tracking](https://posthog.com/docs/error-tracking) in a broader product platform. |
+
+TraceGenie's reason to exist is the focused reporting and follow-up experience. It is not a replacement for application monitoring or product analytics, and user-initiated feedback is not exclusive to TraceGenie.
+
+## Get started
+
+### Self-host the app
+
+You need **Docker with Compose v2** and a Bash terminal. Linux, macOS, and Windows with WSL2 are supported host environments; use the release asset matching your Docker CPU architecture.
+
+1. Download the installer archive and its `.sha256` file from [Releases](https://github.com/Vertaware/tracegenie-community/releases).
+2. Verify the checksum, extract the archive, and open its directory.
+3. Run:
 
 ```sh
-npm install
+./tracegenie install
+```
+
+Open **http://localhost:8088**, enter the private setup code printed in your terminal, and create your administrator account and project. No Node installation or external database account is needed. The archive includes the application and supporting container images.
+
+For a public HTTPS address, backup/restore, upgrades, architecture details, and checksum commands, see the [self-hosting guide](docs/SELF_HOSTING.md).
+
+### Develop from source
+
+Install **Node 24** and **Docker**, then:
+
+```sh
+git clone https://github.com/Vertaware/tracegenie-community.git
+cd tracegenie-community
+npm ci
 npm run dev
 ```
 
-The command creates a fresh local PostgreSQL database and mail inbox, generates private local credentials, applies migrations, seeds one project, builds the original workspaces and starts the services. It uses no existing TraceGenie database or credentials.
+Open **http://127.0.0.1:4311**. Your generated local login is in `.local/login.txt`; development mail is caught at **http://127.0.0.1:14325**. Setup creates a local PostgreSQL database, applies migrations, and starts the API, worker, consumer app, and widget preview.
 
-- Consumer app: http://127.0.0.1:4311
-- Widget preview: http://127.0.0.1:4312/?projectKey=community
-- Hosted feedback: http://127.0.0.1:4312/?projectKey=community&mode=feedback
-- Local email inbox: http://127.0.0.1:14325
-- Local login: `.local/login.txt`
+`npm run stop` stops the development installation and preserves its data. [Contributing](CONTRIBUTING.md) explains the tests and workspace layout.
 
-`npm run stop` stops this installation. It preserves the database and uploads. `npm run setup` initializes the installation without starting the app. Customize the single project in its existing settings screens.
+## Put it in your app
 
-## Email settings
+Open **Settings → Installation** and follow the frontend and backend snippets for your project. Add your website's exact origin and keep the project secret on your server. The widget uses a short-lived session token supplied by your backend; a static site needs a small serverless endpoint.
 
-Open **Settings → Email** as an installation administrator. Choose **Resend**, enter your own API key, sender name, sender email and optional reply-to mailbox, then select **Save and send test email**. Resend's SMTP host, port, username and TLS settings are filled in automatically. Create the key and verify your sending domain in your own [Resend account](https://resend.com/docs/send-with-smtp).
+Want to collect feedback before embedding the widget? Share your hosted form:
 
-The test goes only to the signed-in administrator's email address. A successful test means the mail server accepted it; check your inbox and spam folder. If the test fails, the page explains the failure and clearly says when the settings were saved. **Save settings** also lets you save without sending. **Other SMTP (advanced)** supports another provider or a local relay; authenticated SMTP requires TLS.
-
-Saved settings take precedence over the SMTP environment variables and apply to the API and background worker on their next send, without a restart. Notifications, access codes, password resets, reporter replies and queued retries use this configuration. **Use server settings instead** removes the saved override and restores the environment configuration.
-
-Credentials are encrypted in a separate installation record. The API returns only whether a credential is saved, never its value or ciphertext. Editing sender details preserves the existing credential; changing provider, host or username requires entering the credential again. Only active installation owners/admins can view or change these settings. Public widget and reporter configuration does not include mail credentials.
-
-`npm run setup` / `npm run dev` generates a private `EMAIL_SETTINGS_ENCRYPTION_KEY` in the root `.env`, including for existing local installs. Keep that key stable and back it up securely with the database: losing or changing it requires restoring it or replacing the saved email credential. For a manual deployment, generate 32 random bytes as 64 hexadecimal characters and provide the same key to the API and worker. Never use a `VITE_` variable for secrets.
-
-The default local environment sends to Mailpit and needs no external email account. `.env` is excluded from Git. Environment variables remain available as a fallback:
-
-```dotenv
-SMTP_HOST=smtp.resend.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=resend
-SMTP_PASSWORD=YOUR_RESEND_API_KEY
-EMAIL_FROM=TraceGenie Community <notifications@yourdomain.com>
-REQUESTER_EMAIL_FROM_EMAIL=notifications@yourdomain.com
-REQUESTER_EMAIL_REPLY_TO=support@yourdomain.com
+```text
+https://your-feedback-domain/feedback/?projectKey=community&mode=feedback
 ```
 
-Use a verified domain for both sender addresses and a monitored reply-to mailbox. Changes made directly to environment variables require restarting the API and worker. There is no separate `RESEND_API_KEY` setting. Live Resend delivery has not been tested; local verification uses Mailpit.
+The JavaScript bundle is served from your installation at `/widget/embed.js`. The installation guide provides the actual snippet and configuration for your deployment.
 
-## Scope
+<details>
+<summary>See the issue detail and conversation</summary>
 
-One project is enforced by the database. The original organization and membership records serve as internal installation and team boundaries. There is no organization creation, project creation, platform administration, billing, MCP server, survey service, ideas service, or external integration service.
+![An issue in TraceGenie Community with its screenshot and conversation](docs/images/issue-detail.png)
 
-The original backend and shared contracts are retained where needed by the consumer and widget. Local file storage replaces Azure storage. SMTP replaces the hosted email transport while preserving templates and notification retries. The local mail inbox catches all test messages.
+</details>
 
-The npm workflow is for local development; Docker releases use the self-hosting guide above. Publishing to GitHub and a public registry remains a separate step. No Git remote is configured.
+## Configure email in Settings
 
-## Verification
+Open **Settings → Email**, choose **Resend**, enter your own API key and verified sender address, and select **Save and send test email**. Other SMTP providers are supported too. Credentials are encrypted on the server and are never returned to the widget.
 
-After local setup:
+Email enables notifications, password recovery, and reporter access codes. You can capture reports before configuring it. See [email configuration](docs/EMAIL.md) for provider setup, environment fallbacks, and backing up the encryption key.
 
-```sh
-npm run check:repo
-npm run typecheck
-npm test
-npm run build
-```
+## What Community includes
 
-`npm test` runs the retained shared tests, database-backed OTP and idempotency checks, email credential/runtime and UI checks, attachment validation, and widget capture/privacy/session checks. The command defines the supported Community regression suite. Some retained historical tests still need adaptation to single-project behavior; running every test file indiscriminately is not the release gate.
+- One project per installation, the consumer app, hosted reporter pages, and the widget.
+- PostgreSQL, local attachment storage, and an email worker with queued retries.
+- Your own hosting and email provider, with Docker installation, backups, restores, and upgrades.
+- The existing TraceGenie components and [motion design system](docs/MOTION_SYSTEM.md).
 
-See [Contributing](CONTRIBUTING.md) for repository checks and test scope. Generated output, credentials, local recovery archives and verification receipts belong under `.local/` and are excluded from Git. Implementation tickets are maintained in `backlog/`.
+Community does not include multi-project SaaS management, billing, external ticket integrations, surveys, or an AI/MCP service. See [release notes](docs/RELEASE_NOTES.md) for the first release's verification and limits.
 
-## Motion design system
+## Contribute
 
-The consumer and widget use shared motion tokens and MIT-licensed Motion for React. Open [the motion playground](http://127.0.0.1:4311/motion.html) during local development to try the actual components and a mock report submission. See [the motion guide](docs/MOTION_SYSTEM.md) for the component audit, recipes and accessibility behavior. `npm run test:motion-ui` and `npm run test:widget-flow` are included in `npm test`.
+Bug reports, reproducible examples, documentation improvements, and focused pull requests are welcome. Read [Contributing](CONTRIBUTING.md), use [Issues](https://github.com/Vertaware/tracegenie-community/issues), and avoid including credentials or private customer reports.
+
+CI runs repository hygiene, type checking, the supported regression suite, and production builds. Release automation builds and exercises the packaged installation before attaching downloadable archives to a release.
 
 ## License
 
 [GNU Affero General Public License v3.0 only (AGPL-3.0-only)](LICENSE).
 
-Community is free to use, including commercially, when you comply with the AGPL. Its source-sharing obligations apply to covered distributions and modified versions used over a network. For enquiries about alternative commercial terms, visit [traceitgenie.com](https://traceitgenie.com).
+Community is free to use, **including commercially**, when you comply with the AGPL. Source-sharing requirements apply to covered distributions and modified versions used over a network. Embedding the widget may have implications for a combined application; read [Licensing](docs/LICENSING.md) before choosing how to integrate it.
 
-See [Licensing](docs/LICENSING.md) for the widget/server distinction and distribution requirements. Third-party packages retain their own licenses and notices.
+For enquiries about alternative commercial terms, visit [traceitgenie.com](https://traceitgenie.com). Third-party packages retain their own licences and notices.

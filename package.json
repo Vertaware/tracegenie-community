@@ -30,7 +30,7 @@
     "db:migrate": "npm run db:migrate -w @tracegenie/api",
     "setup": "node scripts/community.mjs setup",
     "stop": "node scripts/community.mjs stop",
-    "test:core": "NODE_ENV=test node --import tsx --test --test-concurrency=1 apps/api/src/modules/reporter/reporter.otp.test.ts apps/api/src/modules/feedback/attachment-types.test.ts apps/api/src/lib/idempotency-indexes.test.ts apps/api/src/modules/email/email-settings.test.ts",
+    "test:core": "NODE_ENV=test node --import tsx --test --test-concurrency=1 apps/api/src/modules/reporter/reporter.otp.test.ts apps/api/src/modules/feedback/attachment-types.test.ts apps/api/src/lib/idempotency-indexes.test.ts apps/api/src/modules/email/email-settings.test.ts apps/api/src/modules/projects/public-config-origin.test.ts",
     "test:email-ui": "npm exec -w @tracegenie/admin -- vitest run test/EmailSettingsPage.test.tsx",
     "test:widget": "npm exec -w @tracegenie/widget -- vitest run test/ImagePrivacy.test.tsx test/ScreenshotPrivacyEditor.test.tsx test/CaptureAttachments.test.tsx test/SessionToken.test.tsx test/EmbedOrigin.test.tsx",
     "test:motion-ui": "npm exec -w @tracegenie/admin -- vitest run test/Motion.test.tsx test/ConfirmDialog.test.tsx test/Menu.test.tsx test/DataTable.test.tsx test/Toast.test.tsx",

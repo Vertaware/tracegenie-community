@@ -4,11 +4,18 @@ One installation contains one project, the original consumer app, secure reporte
 
 ## Install from a release archive
 
-Install Docker with Compose v2 and a Bash terminal (Linux, macOS, or Windows with WSL2). Start Docker. Download the archive matching your CPU, verify its SHA-256 checksum against the release checksum, extract it, and open that directory in a terminal. No Node, npm, source checkout, database account or external mail account is needed on the host.
+Install Docker with Compose v2 and a Bash terminal (Linux, macOS, or Windows with WSL2). Start Docker. Download the installer archive and its `.sha256` file from [GitHub Releases](https://github.com/Vertaware/tracegenie-community/releases). Choose `aarch64` for ARM64 (including Apple Silicon), or `x86_64` for AMD64/Intel, as reported by `docker info --format '{{.Architecture}}'`. Verify the checksum, extract the archive, and open that directory in a terminal. No Node, npm, source checkout, database account or external mail account is needed on the host.
+
+For example, on ARM64:
 
 ```sh
+shasum -a 256 -c tracegenie-community-0.1.0-aarch64.tar.gz.sha256
+tar -xzf tracegenie-community-0.1.0-aarch64.tar.gz
+cd tracegenie-community-0.1.0-aarch64
 ./tracegenie install
 ```
+
+On Linux, `sha256sum -c FILE.sha256` also verifies the checksum. Substitute `x86_64` in the filename for AMD64. While the repository is private, download assets through an authenticated GitHub session.
 
 Open http://localhost:8088. The installer displays a private setup code. Enter it, your real name/email/password and project name. It works only before the first administrator exists. Continue through the existing Email and Installation settings. Email can be configured later, but external email delivery, password recovery and reporter access codes need a working provider. Reports can still be captured without email.
 
@@ -77,6 +84,6 @@ The command validates the image reference, obtains the image, takes a backup, st
 scripts/package-release.sh 0.1.0
 ```
 
-This builds from source inside Docker and writes an architecture-specific archive and SHA-256 checksum under `.local/releases/`. The archive includes the app image, PostgreSQL and Caddy images, installer, Compose configuration, this guide, license notices and the matching application source in `source.tar.gz`. The packager requires Git and creates a source snapshot before building, so the archived source matches the build input; reusing an existing image is not supported. Publish `source.tar.gz` alongside any separately distributed app image or widget bundle. See the [licensing guide](LICENSING.md). ARM64 is verified on this Mac. Build/test AMD64 separately before publishing that platform. Versioned registry distribution can replace the included image archive once the Community GitHub/registry account is chosen. Nothing is published by this script.
+This builds from source inside Docker and writes an architecture-specific archive and SHA-256 checksum under `.local/releases/`. The archive includes the app image, PostgreSQL and Caddy images, installer, Compose configuration, this guide, license notices and the matching application source in `source.tar.gz`. The packager requires Git and creates a source snapshot before building, so the archived source matches the build input; reusing an existing image is not supported. Publish `source.tar.gz` alongside any separately distributed app image or widget bundle. See the [licensing guide](LICENSING.md). The `Release` workflow builds on native ARM64 and AMD64 runners, tests each archive with `scripts/test-release.sh`, and publishes a prerelease only after both pass. The workflow runs when a version tag such as `v0.1.0` is pushed. The packaging script itself does not publish anything. Keep the repository private until the public launch is approved.
 
 The README's npm commands remain the developer workflow. This Docker workflow never uses or changes that development database, ports or credentials.

@@ -12,6 +12,7 @@ import { requireAdmin } from "../auth/auth.middleware";
 import { feedbackService } from "../feedback/feedback.service";
 import { assertOrgWritable,getAccessibleProjectIds,requireOrgAccessForUser,requireProjectAccessForUser } from "../organizations/access";
 import { projectService } from "./projects.service";
+import { publicConfigOrigin } from "./public-config-origin";
 
 const router = Router();
 
@@ -33,7 +34,7 @@ router.get(
   asyncHandler(async (request, response) => {
     const config = await projectService.getPublicConfig(
       getSingleParam(request.params.projectKey),
-      request.header("origin") ?? undefined,
+      publicConfigOrigin({ origin: request.header("origin"), host: request.header("host"), fetchSite: request.header("sec-fetch-site"), serveWeb: env.SERVE_WEB, publicUrl: env.API_BASE_URL }),
     );
     response.json(config);
   }),
@@ -44,7 +45,7 @@ router.get(
   asyncHandler(async (request, response) => {
     response.json(await projectService.getHostedFeedbackConfig(
       getSingleParam(request.params.projectKey),
-      request.header("origin") ?? undefined,
+      publicConfigOrigin({ origin: request.header("origin"), host: request.header("host"), fetchSite: request.header("sec-fetch-site"), serveWeb: env.SERVE_WEB, publicUrl: env.API_BASE_URL }),
     ));
   }),
 );
