@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/*.log
+.git
+.env
+.env.*
+.local
+backlog
+docs/verification
+**/.DS_Store

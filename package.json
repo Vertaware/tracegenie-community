@@ -1,0 +1,47 @@
+{
+  "name": "tracegenie-community",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/admin",
+    "apps/demo",
+    "packages/shared",
+    "packages/widget",
+    "packages/email"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "overrides": {
+    "fast-xml-parser": "^5.10.1",
+    "nanoid": "3.3.18",
+    "postcss": "8.5.26",
+    "qs": "6.16.0",
+    "shell-quote": "1.10.0",
+    "undici": "7.29.0"
+  },
+  "scripts": {
+    "dev": "node scripts/community.mjs start",
+    "build": "npm run build -w @tracegenie/shared && npm run build -w @vertaware/email && npm run build -w @tracegenie/api && npm run build -w @tracegenie/widget && npm run build -w @tracegenie/admin && npm run build -w @tracegenie/demo",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @tracegenie/shared && npm run test:core && npm run test:email-ui && npm run test:widget && npm run test:motion-ui && npm run test:widget-flow && npm run test:setup",
+    "db:generate": "npm run db:generate --workspace @tracegenie/api",
+    "db:migrate": "npm run db:migrate -w @tracegenie/api",
+    "setup": "node scripts/community.mjs setup",
+    "stop": "node scripts/community.mjs stop",
+    "test:core": "NODE_ENV=test node --import tsx --test --test-concurrency=1 apps/api/src/modules/reporter/reporter.otp.test.ts apps/api/src/modules/feedback/attachment-types.test.ts apps/api/src/lib/idempotency-indexes.test.ts apps/api/src/modules/email/email-settings.test.ts",
+    "test:email-ui": "npm exec -w @tracegenie/admin -- vitest run test/EmailSettingsPage.test.tsx",
+    "test:widget": "npm exec -w @tracegenie/widget -- vitest run test/ImagePrivacy.test.tsx test/ScreenshotPrivacyEditor.test.tsx test/CaptureAttachments.test.tsx test/SessionToken.test.tsx test/EmbedOrigin.test.tsx",
+    "test:motion-ui": "npm exec -w @tracegenie/admin -- vitest run test/Motion.test.tsx test/ConfirmDialog.test.tsx test/Menu.test.tsx test/DataTable.test.tsx test/Toast.test.tsx",
+    "test:widget-flow": "npm exec -w @tracegenie/widget -- vitest run test/FeedbackWidget.test.tsx --testNamePattern='^(?!.*(?:active product survey|whitespace-only survey|survey-only reports|restored survey data|matching survey state|configured prompt changes|edits made during a delayed submission)).*$'",
+    "test:setup": "node --test scripts/local-env.test.mjs && node --import tsx --test apps/api/src/modules/installation/installation.test.ts && npm exec -w @tracegenie/admin -- vitest run test/InstallationEntry.test.tsx",
+    "check:repo": "node scripts/check-repo.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "puppeteer-core": "^25.2.0",
+    "typescript": "^5.8.3"
+  },
+  "license": "AGPL-3.0-only"
+}

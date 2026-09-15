@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compact widget survey browser proof</title>
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: #f4f6f8;
+        color: #17212b;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      #proof-host {
+        max-width: 720px;
+        padding: 32px;
+      }
+
+      #proof-host h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: 0;
+      }
+
+      #proof-host p {
+        max-width: 520px;
+        color: #52606d;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="proof-host">
+      <h1>Checkout workspace</h1>
+      <p>Deterministic host surface for the compact product survey workflow.</p>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/test/product-survey-browser-harness.tsx"></script>
+  </body>
+</html>

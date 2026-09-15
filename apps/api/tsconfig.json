@@ -1,0 +1,35 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@tracegenie/shared": [
+        "packages/shared/src/index.ts"
+      ],
+      "@tracegenie/shared/*": [
+        "packages/shared/src/*"
+      ],
+      "@vertaware/email": [
+        "packages/email/src/index.ts"
+      ],
+      "@vertaware/email/*": [
+        "packages/email/src/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "prisma/seed.ts",
+    "scripts/**/*.ts",
+    "../../packages/shared/src/**/*",
+    "../../packages/email/src/**/*"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "../../packages/shared/src/motion.tsx"
+  ]
+}

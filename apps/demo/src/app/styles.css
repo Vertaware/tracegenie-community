@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import "@tracegenie/shared/theme.css";
+
+@theme {
+  --spacing: var(--tg-space-1);
+  --color-primary: var(--tg-primary);
+  --color-primary-hover: var(--tg-primary-hover);
+  --color-primary-light: var(--tg-primary-light);
+  --color-primary-foreground: var(--tg-primary-foreground);
+  --color-background: var(--tg-background);
+  --color-surface: var(--tg-surface);
+  --color-surface-muted: var(--tg-surface-muted);
+  --color-border: var(--tg-border);
+  --color-border-strong: var(--tg-border-strong);
+  --color-foreground: var(--tg-foreground);
+  --color-muted: var(--tg-muted);
+
+  --color-brand-50: var(--tg-brand-50);
+  --color-brand-100: var(--tg-brand-100);
+  --color-brand-200: var(--tg-brand-200);
+  --color-brand-300: var(--tg-brand-300);
+  --color-brand-400: var(--tg-brand-400);
+  --color-brand-500: var(--tg-brand-500);
+  --color-brand-600: var(--tg-brand-600);
+  --color-brand-700: var(--tg-brand-700);
+
+  --color-accent-50: var(--tg-accent-50);
+  --color-accent-100: var(--tg-accent-100);
+  --color-accent-500: var(--tg-accent-500);
+
+  --color-success: var(--tg-success);
+  --color-success-50: var(--tg-success-50);
+  --color-success-200: var(--tg-success-200);
+  --color-success-700: var(--tg-success-700);
+
+  --color-warning: var(--tg-warning);
+  --color-warning-50: var(--tg-warning-50);
+  --color-warning-100: var(--tg-warning-100);
+  --color-warning-200: var(--tg-warning-200);
+  --color-warning-700: var(--tg-warning-700);
+
+  --color-danger: var(--tg-danger);
+  --color-danger-50: var(--tg-danger-50);
+  --color-danger-200: var(--tg-danger-200);
+  --color-danger-700: var(--tg-danger-700);
+
+  --color-code: var(--tg-code-bg);
+  --color-code-text: var(--tg-code-text);
+
+  --shadow-soft: var(--tg-shadow-xs);
+  --shadow-panel: var(--tg-shadow-sm);
+  --shadow-overlay: var(--tg-shadow-lg);
+
+  --radius-sm: var(--tg-radius-sm);
+  --radius-md: var(--tg-radius-md);
+  --radius-lg: var(--tg-radius-lg);
+  --radius-xl: var(--tg-radius-panel);
+  --radius-2xl: var(--tg-radius-panel);
+  --radius-3xl: var(--tg-radius-panel);
+
+  --text-display: var(--tg-text-display-size);
+  --text-display--line-height: var(--tg-text-display-line);
+  --text-display--font-weight: var(--tg-text-display-weight);
+  --text-display--letter-spacing: var(--tg-letter-spacing);
+  --text-title: var(--tg-text-title-size);
+  --text-title--line-height: var(--tg-text-title-line);
+  --text-title--font-weight: var(--tg-text-title-weight);
+  --text-title--letter-spacing: var(--tg-letter-spacing);
+  --text-body: var(--tg-text-body-size);
+  --text-body--line-height: var(--tg-text-body-line);
+  --text-label: var(--tg-text-label-size);
+  --text-label--line-height: var(--tg-text-label-line);
+  --text-caption: var(--tg-text-caption-size);
+  --text-caption--line-height: var(--tg-text-caption-line);
+
+  --font-sans: var(--tg-font-sans);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--tg-background);
+  color: var(--tg-foreground);
+  font-family: var(--tg-font-sans);
+  font-size: var(--tg-text-body-size);
+  line-height: var(--tg-text-body-line);
+  letter-spacing: var(--tg-letter-spacing);
+  font-variant-numeric: tabular-nums;
+}
+
+#hosted-feedback-page .tgw-launcher,
+#hosted-feedback-page .tracegenie-widget-launcher {
+  display: none;
+}

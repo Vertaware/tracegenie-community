@@ -1,0 +1,839 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  ADMIN
+  TRIAGER
+}
+
+enum PlatformRole {
+  USER
+  GLOBAL_ADMIN
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum ProjectRole {
+  PROJECT_ADMIN
+  TRIAGER
+  VIEWER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  READ_ONLY
+  SUSPENDED
+}
+
+
+
+
+
+
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+
+
+
+
+
+
+enum FeedbackStatus {
+  NEW
+  TRIAGED
+  BLOCKED
+  DUPLICATE
+  BACKLOG
+  IN_PROGRESS
+  FIXED
+  CLOSED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueType {
+  BUG
+  UX
+  ENHANCEMENT
+  PERFORMANCE
+  DATA
+  OTHER
+}
+
+
+
+
+
+
+
+
+
+enum AttachmentType {
+  SCREENSHOT
+  FILE
+}
+
+enum AttachmentVisibility {
+  INTERNAL
+  PUBLIC
+}
+
+enum CommentVisibility {
+  INTERNAL
+  PUBLIC
+}
+
+enum StorageProvider {
+  LOCAL
+  AZURE_BLOB
+}
+
+enum NotificationEventType {
+  NEW_ISSUE_ADMIN
+  REQUESTER_CONFIRMATION
+  TRIAGE_REQUESTER
+  STATUS_CHANGE_REQUESTER
+  FIXED_REQUESTER
+  REOPEN_REQUESTER
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+enum NotificationProvider {
+  SMTP
+  NONE
+}
+
+
+
+
+
+
+
+enum AuditActorType {
+  ADMIN_USER
+  INTEGRATION_CLIENT
+  SYSTEM
+}
+
+enum FeedbackRecipientType {
+  REQUESTER
+  EXTERNAL_SUBSCRIBER
+  INTERNAL_SUBSCRIBER
+}
+
+enum ProjectAutoFixPolicy {
+  DISABLED
+  SUGGEST_ONLY
+  ALLOW_BRANCH
+}
+
+enum ProjectReviewerPolicy {
+  NONE
+  HUMAN_REVIEW_REQUIRED
+}
+
+enum ProjectRequesterNotificationPolicy {
+  EXPLICIT_ONLY
+  DISABLED
+}
+
+
+
+model Project {
+  id                          String                        @id @default(cuid())
+  organizationId              String                        @map("organization_id")
+  key                         String                        @unique
+  name                        String
+  description                 String?
+  defaultEnvironment          String                        @map("default_environment")
+  allowedOrigins              String[]                      @default([]) @map("allowed_origins")
+  widgetConfig                Json                          @default("{}") @map("widget_config")
+  notificationEmails          String[]                      @default([]) @map("notification_emails")
+  requesterEmailProductName   String?                       @map("requester_email_product_name")
+  widgetClientSecretHash      String?                       @map("widget_client_secret_hash")
+  widgetClientSecretRotatedAt DateTime?                     @map("widget_client_secret_rotated_at")
+  widgetLastLoadedAt          DateTime?                     @map("widget_last_loaded_at")
+  widgetSessionLastIssuedAt   DateTime?                     @map("widget_session_last_issued_at")
+  onboardingVersion           Int?                          @map("onboarding_version")
+  onboardingCompletedStep     String?                       @map("onboarding_completed_step")
+  onboardingCompletedAt       DateTime?                     @map("onboarding_completed_at")
+  onboardingInstallMethod     String?                       @map("onboarding_install_method")
+  onboardingWebsite           String?                       @map("onboarding_website")
+  isActive                    Boolean                       @default(true) @map("is_active")
+  createdAt                   DateTime                      @default(now()) @map("created_at")
+  updatedAt                   DateTime                      @updatedAt @map("updated_at")
+  organization                Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  feedbackItems               FeedbackItem[]
+  attachments                 FeedbackAttachment[]
+  releases                    Release[]
+  lifecycleTransitions        FeedbackLifecycleTransition[]
+  auditEvents                 FeedbackAuditEvent[]
+  projectMemberships          ProjectMembership[]
+  invites                     Invite[]
+  inviteProjects              InviteProject[]
+  engineeringContext          ProjectEngineeringContext?
+
+  @@unique([organizationId, id])
+  @@index([organizationId, name])
+  @@map("projects")
+}
+
+model ProjectEngineeringContext {
+  id                          String                             @id @default(cuid())
+  projectId                   String                             @unique @map("project_id")
+  repositoryUrl               String?                            @map("repository_url")
+  defaultBranch               String?                            @map("default_branch")
+  worktreePath                String?                            @map("worktree_path")
+  installCommand              String?                            @map("install_command")
+  testCommand                 String?                            @map("test_command")
+  buildCommand                String?                            @map("build_command")
+  autoFixPolicy               ProjectAutoFixPolicy               @default(SUGGEST_ONLY) @map("auto_fix_policy")
+  reviewerPolicy              ProjectReviewerPolicy              @default(NONE) @map("reviewer_policy")
+  requesterNotificationPolicy ProjectRequesterNotificationPolicy @default(EXPLICIT_ONLY) @map("requester_notification_policy")
+  notes                       String?
+  createdAt                   DateTime                           @default(now()) @map("created_at")
+  updatedAt                   DateTime                           @updatedAt @map("updated_at")
+  project                     Project                            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([autoFixPolicy])
+  @@map("project_engineering_contexts")
+}
+
+model Organization {
+  id                             String                        @id @default(cuid())
+  name                           String
+  slug                           String                        @unique
+  status                         OrganizationStatus            @default(ACTIVE)
+  brandName                      String?                       @map("brand_name")
+  logoUrl                        String?                       @map("logo_url")
+  primaryColor                   String?                       @map("primary_color")
+  accentColor                    String?                       @map("accent_color")
+  emailFooterText                String?                       @map("email_footer_text")
+  widgetDefaults                 Json                          @default("{}") @map("widget_defaults")
+  createdAt                      DateTime                      @default(now()) @map("created_at")
+  updatedAt                      DateTime                      @updatedAt @map("updated_at")
+  projects                       Project[]
+  feedbackItems                  FeedbackItem[]
+  memberships                    OrgMembership[]
+  invites                        Invite[]
+  auditEvents                    PlatformAuditEvent[]
+  lifecycleTransitions           FeedbackLifecycleTransition[]
+  savedIssueViews                SavedIssueView[]
+  dsarExportJobs                 DsarExportJob[]
+  dsarDeletionRequests           DsarDeletionRequest[]
+  @@map("organizations")
+}
+
+model OrgMembership {
+  id             String           @id @default(cuid())
+  organizationId String           @map("organization_id")
+  userId         String           @map("user_id")
+  role           OrgRole
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           AdminUser        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId, status])
+  @@map("org_memberships")
+}
+
+model ProjectMembership {
+  id        String           @id @default(cuid())
+  projectId String           @map("project_id")
+  userId    String           @map("user_id")
+  role      ProjectRole
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      AdminUser        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId, status])
+  @@map("project_memberships")
+}
+
+model Invite {
+  id              String          @id @default(cuid())
+  organizationId  String          @map("organization_id")
+  projectId       String?         @map("project_id")
+  projectIdsJson  Json?           @map("project_ids_json")
+  invitedByUserId String?         @map("invited_by_user_id")
+  invitedByName   String?         @map("invited_by_name")
+  email           String
+  orgRole         OrgRole?        @map("org_role")
+  projectRole     ProjectRole?    @map("project_role")
+  tokenHash       String          @unique @map("token_hash")
+  status          InviteStatus    @default(PENDING)
+  expiresAt       DateTime        @map("expires_at")
+  acceptedAt      DateTime?       @map("accepted_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project         Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedBy       AdminUser?      @relation("InviteInviter", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+  projectLinks    InviteProject[]
+
+  @@index([organizationId, status, createdAt])
+  @@index([invitedByUserId])
+  @@index([email, status])
+  @@map("invites")
+}
+
+model InviteProject {
+  id        String      @id @default(cuid())
+  inviteId  String      @map("invite_id")
+  projectId String      @map("project_id")
+  role      ProjectRole
+  createdAt DateTime    @default(now()) @map("created_at")
+  invite    Invite      @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([inviteId, projectId])
+  @@index([projectId])
+  @@map("invite_projects")
+}
+
+
+
+model ReporterOtp {
+  id            String    @id @default(cuid())
+  email         String
+  codeHash      String    @map("code_hash")
+  attemptCount  Int       @default(0) @map("attempt_count")
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  expiresAt     DateTime  @map("expires_at")
+  usedAt        DateTime? @map("used_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([email, createdAt])
+  @@index([email, usedAt, expiresAt])
+  @@map("reporter_otps")
+}
+
+model PlatformAuditEvent {
+  id             String        @id @default(cuid())
+  organizationId String?       @map("organization_id")
+  actorUserId    String?       @map("actor_user_id")
+  eventType      String        @map("event_type")
+  reason         String?
+  beforeJson     Json?         @map("before_json")
+  afterJson      Json?         @map("after_json")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  actorUser      AdminUser?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("platform_audit_events")
+}
+
+model DsarExportJob {
+  id               String       @id
+  organizationId   String       @map("organization_id")
+  actorUserId      String?      @map("actor_user_id")
+  subjectEmail     String?      @map("subject_email")
+  subjectEmailHash String       @map("subject_email_hash")
+  reason           String
+  source           String       @default("admin")
+  status           String       @default("PENDING")
+  countsJson       Json?        @map("counts_json")
+  artifactJson     Json?        @map("artifact_json")
+  failureJson      Json?        @map("failure_json")
+  attemptCount     Int          @default(0) @map("attempt_count")
+  lockedAt         DateTime?    @map("locked_at")
+  lockedBy         String?      @map("locked_by")
+  nextAttemptAt    DateTime?    @map("next_attempt_at")
+  requestedAt      DateTime     @default(now()) @map("requested_at")
+  completedAt      DateTime?    @map("completed_at")
+  failedAt         DateTime?    @map("failed_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorUser        AdminUser?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([status, nextAttemptAt, createdAt])
+  @@map("dsar_export_requests")
+}
+
+model DsarDeletionRequest {
+  id                   String       @id
+  organizationId       String       @map("organization_id")
+  actorUserId          String?      @map("actor_user_id")
+  subjectEmailHash     String       @map("subject_email_hash")
+  reason               String
+  source               String       @default("admin")
+  status               String       @default("PENDING")
+  countsJson           Json?        @map("counts_json")
+  deletedJson          Json?        @map("deleted_json")
+  processingClaimToken String?      @map("processing_claim_token")
+  processingClaimedAt  DateTime?    @map("processing_claimed_at")
+  requestedAt          DateTime     @default(now()) @map("requested_at")
+  resolvedAt           DateTime?    @map("resolved_at")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorUser            AdminUser?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([status, createdAt])
+  @@map("dsar_deletion_requests")
+}
+
+
+
+
+
+model Release {
+  id             String         @id @default(cuid())
+  releaseKey     String         @unique @map("release_key")
+  projectId      String         @map("project_id")
+  appName        String         @map("app_name")
+  appEnvironment String         @map("app_environment")
+  appVersion     String         @map("app_version")
+  buildNumber    String?        @map("build_number")
+  releaseChannel String?        @map("release_channel")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  feedbackItems  FeedbackItem[]
+
+  @@index([projectId, appVersion])
+  @@map("releases")
+}
+
+model AdminUser {
+  id                       String                    @id @default(cuid())
+  email                    String                    @unique
+  name                     String
+  passwordHash             String                    @map("password_hash")
+  role                     AdminRole                 @default(TRIAGER)
+  platformRole             PlatformRole              @default(USER) @map("platform_role")
+  isActive                 Boolean                   @default(true) @map("is_active")
+  lastLoginAt              DateTime?                 @map("last_login_at")
+  passwordChangedAt        DateTime?                 @map("password_changed_at")
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  orgMemberships           OrgMembership[]
+  projectMemberships       ProjectMembership[]
+  platformAuditEvents      PlatformAuditEvent[]
+  assignedFeedback         FeedbackItem[]            @relation("FeedbackOwner")
+  comments                 FeedbackComment[]
+  statusHistory            FeedbackStatusHistory[]
+  auditEvents              FeedbackAuditEvent[]
+  addedRecipients          FeedbackTicketRecipient[] @relation("FeedbackRecipientAddedBy")
+  passwordResetTokens      PasswordResetToken[]
+  savedIssueViews          SavedIssueView[]
+  dsarExportJobs           DsarExportJob[]
+  dsarDeletionRequests     DsarDeletionRequest[]
+  sentInvites              Invite[]                  @relation("InviteInviter")
+
+  @@map("admin_users")
+}
+
+
+
+
+
+
+
+model SavedIssueView {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  userId         String       @map("user_id")
+  name           String
+  filters        Json
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           AdminUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId, name])
+  @@index([organizationId, userId, updatedAt])
+  @@map("saved_issue_views")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt, consumedAt])
+  @@map("password_reset_tokens")
+}
+
+model FeedbackItem {
+  id                            String                        @id @default(cuid())
+  clientSubmissionId            String?                       @map("client_submission_id")
+  clientSubmissionFingerprint   String?                       @map("client_submission_fingerprint")
+  postCommitInvoicePayload      Json?                         @map("post_commit_invoice_payload")
+  postCommitClaimedAt           DateTime?                     @map("post_commit_claimed_at")
+  postCommitCompletedAt         DateTime?                     @map("post_commit_completed_at")
+  ticketNumber                  Int                           @unique @default(autoincrement()) @map("ticket_number")
+  projectId                     String                        @map("project_id")
+  organizationId                String                        @map("organization_id")
+  releaseId                     String?                       @map("release_id")
+  ownerId                       String?                       @map("owner_id")
+  duplicateOfId                 String?                       @map("duplicate_of_id")
+  status                        FeedbackStatus                @default(NEW)
+  issueType                     IssueType                     @map("issue_type")
+  severity                      Severity
+  title                         String
+  description                   String
+  stepsToReproduce              String?                       @map("steps_to_reproduce")
+  expectedResult                String?                       @map("expected_result")
+  actualResult                  String?                       @map("actual_result")
+  labels                        String[]                      @default([])
+  currentUrl                    String                        @map("current_url")
+  routeName                     String?                       @map("route_name")
+  pageTitle                     String?                       @map("page_title")
+  referrer                      String?
+  appName                       String                        @map("app_name")
+  appEnvironment                String                        @map("app_environment")
+  appVersion                    String                        @map("app_version")
+  buildNumber                   String?                       @map("build_number")
+  releaseChannel                String?                       @map("release_channel")
+  browserUserAgent              String                        @map("browser_user_agent")
+  browserLanguage               String?                       @map("browser_language")
+  browserPlatform               String?                       @map("browser_platform")
+  browserName                   String?                       @map("browser_name")
+  browserVersion                String?                       @map("browser_version")
+  osName                        String?                       @map("os_name")
+  osVersion                     String?                       @map("os_version")
+  viewportWidth                 Int                           @map("viewport_width")
+  viewportHeight                Int                           @map("viewport_height")
+  reporterId                    String?                       @map("reporter_id")
+  reporterEmail                 String?                       @map("reporter_email")
+  reporterName                  String?                       @map("reporter_name")
+  reporterRole                  String?                       @map("reporter_role")
+  clientTimestamp               DateTime                      @map("client_timestamp")
+  consoleEntries                Json?                         @map("console_entries")
+  clientErrorContext            Json?                         @map("client_error_context")
+  extraContext                  Json?                         @map("extra_context")
+  duplicateFingerprint          String?                       @map("duplicate_fingerprint")
+  duplicateCandidates           Json?                         @map("duplicate_candidates")
+  convertedToBacklog            Boolean                       @default(false) @map("converted_to_backlog")
+  externalTicketRef             String?                       @map("external_ticket_ref")
+  requesterNotificationsEnabled Boolean                       @default(false) @map("requester_notifications_enabled")
+  isOverageLocked               Boolean                       @default(false) @map("is_overage_locked")
+  usageMonth                    String?                       @map("usage_month")
+  createdAt                     DateTime                      @default(now()) @map("created_at")
+  updatedAt                     DateTime                      @updatedAt @map("updated_at")
+  owner                         AdminUser?                    @relation("FeedbackOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  duplicateOf                   FeedbackItem?                 @relation("FeedbackDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates                    FeedbackItem[]                @relation("FeedbackDuplicates")
+  organization                  Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project                       Project                       @relation(fields: [organizationId, projectId], references: [organizationId, id], onDelete: Cascade)
+  release                       Release?                      @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  attachments                   FeedbackAttachment[]
+  comments                      FeedbackComment[]
+  statusHistory                 FeedbackStatusHistory[]
+  triageRuns                    FeedbackTriageRun[]
+  notifications                 FeedbackNotification[]
+  auditEvents                   FeedbackAuditEvent[]
+  subscribers                   FeedbackTicketRecipient[]
+  lifecycleTransitions          FeedbackLifecycleTransition[]
+
+  @@unique([projectId, clientSubmissionId])
+  @@unique([organizationId, projectId, id])
+  @@index([organizationId, createdAt])
+  @@index([projectId, status, createdAt])
+  @@index([projectId, severity, createdAt])
+  @@index([projectId, issueType, createdAt])
+  @@index([duplicateFingerprint])
+  @@map("feedback_items")
+}
+
+model FeedbackAttachment {
+  id                      String               @id @default(cuid())
+  projectId               String               @map("project_id")
+  clientUploadId          String?              @map("client_upload_id")
+  clientUploadFingerprint String?              @map("client_upload_fingerprint")
+  feedbackItemId          String?              @map("feedback_item_id")
+  uploadToken             String?              @unique @map("upload_token")
+  kind                    AttachmentType       @default(SCREENSHOT)
+  visibility              AttachmentVisibility @default(INTERNAL)
+  provider                StorageProvider      @default(LOCAL)
+  storageKey              String               @map("storage_key")
+  publicUrl               String?              @map("public_url")
+  fileName                String               @map("file_name")
+  mimeType                String               @map("mime_type")
+  byteSize                Int                  @map("byte_size")
+  width                   Int?
+  height                  Int?
+  checksum                String?
+  uploadedByIp            String?              @map("uploaded_by_ip")
+  linkedAt                DateTime?            @map("linked_at")
+  expiresAt               DateTime?            @map("expires_at")
+  createdAt               DateTime             @default(now()) @map("created_at")
+  feedbackItem            FeedbackItem?        @relation(fields: [feedbackItemId], references: [id], onDelete: SetNull)
+  project                 Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, clientUploadId])
+  @@index([projectId, createdAt])
+  @@map("feedback_attachments")
+}
+
+model FeedbackComment {
+  id              String            @id @default(cuid())
+  feedbackItemId  String            @map("feedback_item_id")
+  authorId        String?           @map("author_id")
+  clientRequestId String?           @map("client_request_id")
+  body            String
+  visibility      CommentVisibility @default(INTERNAL)
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  author          AdminUser?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  feedbackItem    FeedbackItem      @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+
+  @@unique([feedbackItemId, clientRequestId])
+  @@index([feedbackItemId, createdAt])
+  @@map("feedback_comments")
+}
+
+model FeedbackStatusHistory {
+  id             String          @id @default(cuid())
+  feedbackItemId String          @map("feedback_item_id")
+  actorId        String?         @map("actor_id")
+  fromStatus     FeedbackStatus? @map("from_status")
+  toStatus       FeedbackStatus  @map("to_status")
+  note           String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  actor          AdminUser?      @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  feedbackItem   FeedbackItem    @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackItemId, createdAt])
+  @@map("feedback_status_history")
+}
+
+model IntegrationClient {
+  id                   String                        @id @default(cuid())
+  name                 String
+  triageRuns           FeedbackTriageRun[]
+  notifications        FeedbackNotification[]
+  lifecycleTransitions FeedbackLifecycleTransition[]
+  auditEvents          FeedbackAuditEvent[]
+  @@map("integration_clients")
+}
+
+
+
+
+
+
+
+
+
+model FeedbackLifecycleTransition {
+  id                  String             @id @default(cuid())
+  organizationId      String             @map("organization_id")
+  projectId           String             @map("project_id")
+  feedbackItemId      String             @map("feedback_item_id")
+  integrationClientId String?            @map("integration_client_id")
+  provider            String
+  providerEventId     String             @map("provider_event_id")
+  eventFingerprint    String             @map("event_fingerprint")
+  source              String
+  stage               String
+  state               String
+  externalId          String?            @map("external_id")
+  externalUrl         String?            @map("external_url")
+  label               String?
+  safeDetails         Json?              @map("safe_details")
+  observedAt          DateTime           @map("observed_at")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project             Project            @relation(fields: [organizationId, projectId], references: [organizationId, id], onDelete: Cascade)
+  feedbackItem        FeedbackItem       @relation(fields: [organizationId, projectId, feedbackItemId], references: [organizationId, projectId, id], onDelete: Cascade)
+  integrationClient   IntegrationClient? @relation(fields: [integrationClientId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, provider, providerEventId])
+  @@index([feedbackItemId, observedAt, createdAt])
+  @@index([feedbackItemId, provider, stage, observedAt, createdAt])
+  @@index([organizationId, createdAt])
+  @@map("feedback_lifecycle_transitions")
+}
+
+model FeedbackTriageRun {
+  id                   String             @id @default(cuid())
+  feedbackItemId       String             @map("feedback_item_id")
+  integrationClientId  String?            @map("integration_client_id")
+  actorType            AuditActorType     @default(INTEGRATION_CLIENT) @map("actor_type")
+  triageVersion        String             @default("v1") @map("triage_version")
+  suggestedSeverity    Severity?          @map("suggested_severity")
+  suggestedIssueType   IssueType?         @map("suggested_issue_type")
+  suggestedCategory    String?            @map("suggested_category")
+  likelyRootCause      String?            @map("likely_root_cause")
+  affectedArea         String?            @map("affected_area")
+  reproductionSteps    String[]           @default([]) @map("reproduction_steps")
+  nextAction           String?            @map("next_action")
+  confidence           Float?
+  safeRequesterSummary String?            @map("safe_requester_summary")
+  rawPayload           Json?              @map("raw_payload")
+  idempotencyKey       String?            @map("idempotency_key")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  feedbackItem         FeedbackItem       @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+  integrationClient    IntegrationClient? @relation(fields: [integrationClientId], references: [id], onDelete: SetNull)
+
+  @@unique([integrationClientId, idempotencyKey])
+  @@index([feedbackItemId, createdAt])
+  @@index([integrationClientId, createdAt])
+  @@map("feedback_triage_runs")
+}
+
+model FeedbackNotification {
+  id                  String                   @id @default(cuid())
+  feedbackItemId      String                   @map("feedback_item_id")
+  feedbackRecipientId String?                  @map("feedback_recipient_id")
+  integrationClientId String?                  @map("integration_client_id")
+  eventType           NotificationEventType    @map("event_type")
+  recipientEmail      String?                  @map("recipient_email")
+  recipientName       String?                  @map("recipient_name")
+  recipientType       FeedbackRecipientType    @default(REQUESTER) @map("recipient_type")
+  dedupeKey           String                   @unique @map("dedupe_key")
+  triggerStatus       FeedbackStatus?          @map("trigger_status")
+  fromName            String?                  @map("from_name")
+  fromEmail           String?                  @map("from_email")
+  replyToEmail        String?                  @map("reply_to_email")
+  productNameSnapshot String?                  @map("product_name_snapshot")
+  subjectSnapshot     String?                  @map("subject_snapshot")
+  bodySnapshot        String?                  @map("body_snapshot")
+  status              NotificationStatus       @default(PENDING)
+  provider            NotificationProvider?    @map("provider")
+  providerMessageId   String?                  @map("provider_message_id")
+  skipReason          String?                  @map("skip_reason")
+  errorJson           Json?                    @map("error_json")
+  attemptCount        Int                      @default(0) @map("attempt_count")
+  nextAttemptAt       DateTime?                @map("next_attempt_at")
+  lockedAt            DateTime?                @map("locked_at")
+  lockedBy            String?                  @map("locked_by")
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  sentAt              DateTime?                @map("sent_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+  feedbackItem        FeedbackItem             @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+  feedbackRecipient   FeedbackTicketRecipient? @relation(fields: [feedbackRecipientId], references: [id], onDelete: SetNull)
+  integrationClient   IntegrationClient?       @relation(fields: [integrationClientId], references: [id], onDelete: SetNull)
+
+  @@index([feedbackItemId, createdAt])
+  @@index([status, createdAt])
+  @@index([status, nextAttemptAt, createdAt])
+  @@map("feedback_notifications")
+}
+
+model FeedbackTicketRecipient {
+  id                   String                 @id @default(cuid())
+  feedbackItemId       String                 @map("feedback_item_id")
+  addedByAdminUserId   String?                @map("added_by_admin_user_id")
+  email                String
+  name                 String?
+  recipientType        FeedbackRecipientType  @map("recipient_type")
+  notifyOnTriage       Boolean                @default(true) @map("notify_on_triage")
+  notifyOnStatusChange Boolean                @default(true) @map("notify_on_status_change")
+  isActive             Boolean                @default(true) @map("is_active")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+  addedBy              AdminUser?             @relation("FeedbackRecipientAddedBy", fields: [addedByAdminUserId], references: [id], onDelete: SetNull)
+  feedbackItem         FeedbackItem           @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+  notifications        FeedbackNotification[]
+
+  @@unique([feedbackItemId, email])
+  @@index([feedbackItemId, isActive, createdAt])
+  @@map("feedback_ticket_recipients")
+}
+
+model FeedbackAuditEvent {
+  id                  String             @id @default(cuid())
+  feedbackItemId      String             @map("feedback_item_id")
+  projectId           String             @map("project_id")
+  actorType           AuditActorType     @map("actor_type")
+  adminUserId         String?            @map("admin_user_id")
+  integrationClientId String?            @map("integration_client_id")
+  eventType           String             @map("event_type")
+  beforeJson          Json?              @map("before_json")
+  afterJson           Json?              @map("after_json")
+  requestId           String?            @map("request_id")
+  idempotencyKey      String?            @map("idempotency_key")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  adminUser           AdminUser?         @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
+  integrationClient   IntegrationClient? @relation(fields: [integrationClientId], references: [id], onDelete: SetNull)
+  feedbackItem        FeedbackItem       @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+  project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationClientId, eventType, idempotencyKey])
+  @@index([feedbackItemId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([integrationClientId, createdAt])
+  @@map("feedback_audit_events")
+}
+
+// One mail configuration for this Community installation. Credentials never enter project/widget JSON.
+model EmailSettings {
+  id                  String    @id @default("community")
+  provider            String
+  host                String
+  port                Int
+  secure              Boolean
+  user                String
+  credentialEncrypted String?   @map("credential_encrypted")
+  fromName            String    @map("from_name")
+  fromEmail           String    @map("from_email")
+  replyTo             String    @map("reply_to")
+  revision            String    @default(uuid())
+  lastTestAt          DateTime? @map("last_test_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("email_settings")
+}

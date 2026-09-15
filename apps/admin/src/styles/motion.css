@@ -1,0 +1,100 @@
+/* Expressive Community recipes. Shared primitives own overlay enter/exit;
+   CSS owns hover, press, focus, finite celebrations and mount choreography. */
+@media (prefers-reduced-motion: no-preference) {
+  :is(.tg-action-button, .tg-icon-button, .tg-tool-button, .tg-copy-button, .tg-inline-link, .tg-mobile-card) {
+    transition: transform var(--tg-motion-quick) var(--tg-motion-spring), background-color var(--tg-motion-standard) var(--tg-motion-ease-out), border-color var(--tg-motion-standard) var(--tg-motion-ease-out), box-shadow var(--tg-motion-standard) var(--tg-motion-ease-out), color var(--tg-motion-quick) ease-out, opacity var(--tg-motion-quick) ease-out;
+  }
+  :is(.tg-action-button, .tg-icon-button, .tg-tool-button, .tg-copy-button):not(:disabled):active {
+    transform: scale(0.95);
+    transition-duration: 100ms;
+  }
+  :is(.tg-action-button, .tg-icon-button, .tg-tool-button, .tg-copy-button) > svg {
+    transition: transform var(--tg-motion-standard) var(--tg-motion-spring);
+  }
+  [data-tg-primary-target="true"] { position: relative; isolation: isolate; overflow: hidden; }
+  [data-tg-primary-target="true"]::after {
+    content: ""; position: absolute; inset: -60% -15%; pointer-events: none;
+    background: linear-gradient(115deg, transparent 38%, #ffffff38 49%, transparent 60%);
+    transform: translateX(-110%);
+    transition: transform 500ms var(--tg-motion-ease-out);
+  }
+  .tg-directory-reveal { animation: tg-card-arrive 380ms var(--tg-motion-ease-out) both; }
+  .tg-directory-reveal:nth-child(2) { animation-delay: 45ms; }
+  .tg-directory-reveal:nth-child(3) { animation-delay: 90ms; }
+  .tg-directory-reveal:nth-child(4) { animation-delay: 135ms; }
+  .tg-directory-reveal:nth-child(5) { animation-delay: 180ms; }
+  .tg-directory-reveal:nth-child(n+6) { animation-delay: 225ms; }
+  .tg-directory-card {
+    transition: transform 280ms var(--tg-motion-spring), box-shadow 280ms var(--tg-motion-ease-out), border-color 180ms ease-out, background-color 180ms ease-out;
+  }
+  .tg-directory-icon { transition: transform 320ms var(--tg-motion-spring); }
+  .tg-shell-nav-item { position: relative; transition: background-color 180ms ease-out, box-shadow 180ms ease-out; }
+  .tg-shell-nav-icon { transition: transform 280ms var(--tg-motion-spring), color 160ms ease-out; }
+  .tg-shell-nav-item-active .tg-shell-nav-icon { animation: tg-icon-land 360ms var(--tg-motion-spring) both; }
+  .tg-shell-nav-item::after {
+    content: ""; position: absolute; left: 1px; top: 25%; bottom: 25%; width: 3px; border-radius: 4px;
+    background: var(--tg-primary); transform: scaleY(0); opacity: 0;
+    transition: transform 280ms var(--tg-motion-spring), opacity 160ms ease-out;
+  }
+  .tg-shell-nav-item-active::after { transform: scaleY(1); opacity: 1; }
+  .tg-soft-input { transition: border-color 180ms ease-out, box-shadow 220ms ease-out, background-color 180ms ease-out; }
+  label:has(+ .tg-soft-input:focus) { color: var(--tg-primary); transition: color 160ms ease-out; }
+  [role="switch"] { transition: background-color 200ms ease-out, box-shadow 200ms ease-out; }
+  [role="switch"] > span { transition: transform 260ms var(--tg-motion-spring); }
+  input[type="checkbox"], input[type="radio"] { transition: transform 160ms var(--tg-motion-spring); }
+  input[type="checkbox"]:checked, input[type="radio"]:checked { animation: tg-check-land 240ms var(--tg-motion-spring); }
+  [role="tab"] { transition: background-color 200ms ease-out, color 160ms ease-out, box-shadow 200ms ease-out; }
+  [role="tab"][aria-selected="true"] > svg { animation: tg-icon-land 300ms var(--tg-motion-spring); }
+  .tg-copy-button[data-copied="true"] > svg { animation: tg-icon-land 380ms var(--tg-motion-spring); }
+  .tg-copy-button[data-copied="true"] { animation: tg-success-ring 550ms ease-out; }
+  .tg-message-banner { animation: tg-banner-arrive 280ms var(--tg-motion-ease-out) both; }
+  .tg-message-banner[role="alert"] { animation: tg-error-nudge 320ms ease-out both; }
+  .tg-toast[data-toast-type="success"] > svg { animation: tg-icon-land 420ms var(--tg-motion-spring) 70ms both; }
+  .tg-toast[data-toast-type="error"] > svg { animation: tg-error-nudge 320ms ease-out 70ms both; }
+  .tg-toast[data-toast-type="success"] > svg path { stroke-dasharray: 30; animation: tg-check-draw 500ms var(--tg-motion-ease-out) both; }
+  .tg-dirty-bar { animation: tg-banner-arrive 300ms var(--tg-motion-spring) both; }
+  .tg-empty-icon { animation: tg-icon-land 480ms var(--tg-motion-spring) both; }
+  .tg-status-change { animation: tg-banner-arrive 220ms var(--tg-motion-ease-out); }
+  .tg-progress-fill { transition: transform 360ms var(--tg-motion-ease-out); }
+  details[open] > :not(summary) { animation: tg-banner-arrive 220ms var(--tg-motion-ease-out); }
+  @supports (interpolate-size: allow-keywords) {
+    details::details-content { interpolate-size: allow-keywords; height: 0; opacity: 0; overflow: clip; transition: height 280ms var(--tg-motion-ease-out), opacity 180ms ease-out, content-visibility 280ms allow-discrete; }
+    details[open]::details-content { height: auto; opacity: 1; }
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .tg-action-button:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--tg-primary) 55%, transparent); }
+  .tg-action-button:not(:disabled):active { transform: scale(0.95); }
+  [data-tg-primary-target="true"]:not(:disabled):hover::after { transform: translateX(110%); }
+  :is(.tg-action-button, .tg-inline-link):hover > svg { transform: translateX(2px) rotate(-5deg); }
+  .tg-icon-button:not(:disabled):hover > svg { transform: rotate(9deg) scale(1.1); }
+  .tg-tool-button:not(:disabled):hover > svg { transform: translateY(-1px) scale(1.12); }
+  .tg-copy-button:not(:disabled):hover > svg { transform: rotate(-8deg); }
+  .tg-directory-card:hover { transform: translateY(-5px); box-shadow: 0 16px 28px -18px color-mix(in srgb, var(--tg-primary) 50%, transparent); }
+  .tg-directory-card:hover .tg-directory-icon { transform: rotate(-9deg) scale(1.15); }
+  .tg-directory-card:active { transform: translateY(-1px) scale(0.985); }
+  .tg-shell-nav-item:hover .tg-shell-nav-icon { transform: rotate(-8deg) scale(1.1); }
+  [role="menuitem"] { transition: transform 180ms var(--tg-motion-ease-out), background-color 160ms ease-out; }
+  [role="menuitem"]:not([aria-disabled="true"]):hover { transform: translateX(3px); }
+  .tg-choice-row:hover { transform: translateY(-1px); }
+  .tg-screenshot-link { overflow: hidden; }
+  .tg-screenshot-link:hover img { transform: scale(1.035); }
+}
+@keyframes tg-card-arrive { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes tg-icon-land { 0% { transform: scale(0.55) rotate(-18deg); } 70% { transform: scale(1.13) rotate(4deg); } 100% { transform: none; } }
+@keyframes tg-check-land { 0% { transform: scale(0.75); } 65% { transform: scale(1.12); } 100% { transform: none; } }
+@keyframes tg-success-ring { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tg-success) 30%, transparent); } to { box-shadow: 0 0 0 7px transparent; } }
+@keyframes tg-banner-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes tg-error-nudge { 0%, 100% { transform: none; } 25% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 75% { transform: translateX(-1px); } }
+@keyframes tg-check-draw { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+/* Also covers portals mounted outside #root. No spatial hover/press or CSS loops. */
+@media (prefers-reduced-motion: reduce) {
+  :is(.tg-motion-surface, .tg-toast, .tg-popover-in, .tg-dialog-card, .tg-directory-reveal, .tg-directory-card, .tg-directory-icon, .tg-shell-nav-icon, .tg-message-banner, .tg-action-button, .tg-icon-button, .tg-tool-button, .tg-copy-button),
+  .tg-motion-surface *, .tg-motion-surface *::before, .tg-motion-surface *::after {
+    animation: none !important; transition: none !important;
+  }
+  :is(.tg-action-button, .tg-icon-button, .tg-tool-button, .tg-copy-button):active,
+  :is(.tg-action-button, .tg-icon-button, .tg-tool-button, .tg-copy-button):hover { transform: none !important; }
+}
+
+.tg-motion-surface[data-side="top"] { transform-origin: bottom center; }

@@ -1,0 +1,182 @@
+/*
+ * TraceGenie design tokens.
+ *
+ * Variable names are a public API: the admin app and the embeddable widget
+ * both consume them. Never delete or rename a token; change values only.
+ */
+
+@import "./motion.css";
+
+:root {
+  color-scheme: light;
+
+  /* Core surfaces */
+  --tg-background: #f2f2f7;
+  --tg-surface: #ffffff;
+  --tg-surface-muted: #f5f5f7;
+  --tg-border-subtle: #e5e5ea;
+  --tg-border: #d2d2d7;
+  --tg-border-strong: #86868b;
+  --tg-foreground: #1d1d1f;
+  --tg-muted: #6e6e73;
+
+  /* Primary: an accessible violet derived from the logo's #8777f1 mark. */
+  --tg-primary: #6759d1;
+  --tg-primary-hover: #574ab8;
+  --tg-primary-light: #f0eeff;
+  --tg-primary-foreground: #ffffff;
+  --tg-primary-glow: rgba(103, 89, 209, 0.2);
+
+  /* Focus ring */
+  --tg-focus-ring: rgba(103, 89, 209, 0.32);
+
+  /* Accent: alias of primary. Kept for compatibility; do not introduce a second hue. */
+  --tg-accent-50: #f7f6ff;
+  --tg-accent-100: #e0dcff;
+  --tg-accent-500: #6759d1;
+
+  /* Brand: the logo's ink, violet, and lavender family. */
+  --tg-brand-50: #f7f6ff;
+  --tg-brand-100: #efedff;
+  --tg-brand-200: #e0dcff;
+  --tg-brand-300: #b9b9fa;
+  --tg-brand-400: #a6a0f8;
+  --tg-brand-500: #8777f1;
+  --tg-brand-600: #6759d1;
+  --tg-brand-700: #1c1f47;
+
+  /* Neutral */
+  --tg-neutral-50: #fafafa;
+  --tg-neutral-100: #f5f5f7;
+  --tg-neutral-200: #e8e8ed;
+  --tg-neutral-400: #aeaeb2;
+  --tg-neutral-500: #86868b;
+  --tg-neutral-700: #48484a;
+  --tg-neutral-900: #1d1d1f;
+
+  /* Semantic */
+  --tg-success: #1d6f32;
+  --tg-success-50: #f0faf3;
+  --tg-success-200: #9bd7aa;
+  --tg-success-700: #1d6f32;
+  --tg-warning: #8a4b00;
+  --tg-warning-50: #fff8eb;
+  --tg-warning-100: #f9ddb0;
+  --tg-warning-200: #e3a143;
+  --tg-warning-700: #8a4b00;
+  --tg-danger: #d70015;
+  --tg-danger-50: #fff2f1;
+  --tg-danger-200: #ffc5c2;
+  --tg-danger-700: #d70015;
+
+  /* Severity scale: fixed meanings, used identically everywhere */
+  --tg-severity-low: #86868b;
+  --tg-severity-medium: #8a4b00;
+  --tg-severity-high: #c2410c;
+  --tg-severity-critical: #d70015;
+
+  /* Charts: brand-violet ramp; public variable names remain stable. */
+  --tg-chart-blue: #6759d1;
+  --tg-chart-blue-300: #8777f1;
+  --tg-chart-blue-100: #e0dcff;
+  /* Legacy chart hue names: aliased into the ramp so nothing renders rainbow. */
+  --tg-chart-violet: #8777f1;
+  --tg-chart-cyan: #8777f1;
+  --tg-chart-amber: #8a4b00;
+  --tg-chart-green: #1d6f32;
+
+  /* Code blocks */
+  --tg-code-bg: #1d1d1f;
+  --tg-code-text: #f5f5f7;
+
+  /* Layout */
+  --tg-content-max: 1440px;
+  --tg-detail-min-h: 560px;
+
+  /* Spacing scale (4px base). Numeric names are canonical; named aliases stay public. */
+  --tg-space-1: 4px;
+  --tg-space-2: 8px;
+  --tg-space-3: 12px;
+  --tg-space-4: 16px;
+  --tg-space-5: 20px;
+  --tg-space-6: 24px;
+  --tg-space-8: 32px;
+  --tg-space-12: 48px;
+  --tg-space-xs: 4px;
+  --tg-space-sm: 8px;
+  --tg-space-md: 16px;
+  --tg-space-lg: 24px;
+  --tg-space-xl: 32px;
+  --tg-space-2xl: 48px;
+
+  /* Elevation: exactly three levels. L0 = border only, L1 = raised, L2 = overlay. */
+  --tg-elevation-0: none;
+  --tg-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --tg-elevation-2: 0 16px 48px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --tg-shadow-xs: var(--tg-elevation-0);
+  --tg-shadow-sm: var(--tg-elevation-1);
+  --tg-shadow-md: var(--tg-elevation-1);
+  --tg-shadow-lg: var(--tg-elevation-2);
+  --tg-shadow-panel: var(--tg-elevation-2);
+
+  /* Shape and icon rules. Panels use 12px, controls 8px, and pills the full radius. */
+  --tg-radius-sm: 4px;
+  --tg-radius-md: 6px;
+  --tg-radius-lg: 8px;
+  --tg-radius-panel: 12px;
+  --tg-radius-full: 9999px;
+  --tg-icon-sm: 12px;
+  --tg-icon-nav: 15px;
+  --tg-icon-md: 16px;
+  --tg-icon-lg: 20px;
+  --tg-icon-xl: 24px;
+  --tg-icon-stroke: 1.75;
+
+  /* Five text roles with zero tracking. */
+  --tg-font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --tg-text-display-size: 24px;
+  --tg-text-display-line: 32px;
+  --tg-text-display-weight: 600;
+  --tg-text-title-size: 17px;
+  --tg-text-title-line: 24px;
+  --tg-text-title-weight: 600;
+  --tg-text-body-size: 14px;
+  --tg-text-body-line: 20px;
+  --tg-text-label-size: 13px;
+  --tg-text-label-line: 16px;
+  --tg-text-caption-size: 12px;
+  --tg-text-caption-line: 16px;
+  --tg-letter-spacing: 0;
+
+  /* Motion is shared so surfaces do not invent easing curves. */
+  --tg-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--tg-background);
+  color: var(--tg-foreground);
+  font-family: var(--tg-font-sans);
+  font-size: var(--tg-text-body-size);
+  line-height: var(--tg-text-body-line);
+  letter-spacing: var(--tg-letter-spacing);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@tracegenie/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./theme.css": "./src/theme.css",
+    "./tailwind-preset": "./tailwind-preset.cjs",
+    "./motion": {
+      "types": "./dist/motion.d.ts",
+      "default": "./dist/motion.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test ./test/point-selection.test.mjs ./test/design-tokens.test.mjs && tsx --test ./test/widget-extra-context.test.ts ./test/owner-hints.test.ts ./test/feature-exposure.test.ts ./test/async-state.test.ts ./test/dirty-draft.test.ts ./test/product-onboarding.test.ts ./test/feedback-identifiers.test.ts ./test/customer-status-recipient.test.ts",
+    "test:point-selection": "npm run build && node --test ./test/point-selection.test.mjs"
+  },
+  "dependencies": {
+    "motion": "^13.3.0",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0",
+    "react-dom": ">=18.2.0"
+  },
+  "license": "AGPL-3.0-only"
+}

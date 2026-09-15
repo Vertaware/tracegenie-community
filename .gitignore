@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+*.log
+.DS_Store
+.local/
+apps/api/uploads/
+
+# Local verification and installer output
+coverage/
+test-results/
+playwright-report/
+backups/
+image.tar.gz
