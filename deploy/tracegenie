@@ -12,52 +12,58 @@ prerequisites() {
   docker info >/dev/null 2>&1 || fail "Start Docker and ensure your user can access it."
 }
 dc() { docker compose --env-file .env -f compose.yaml "$@"; }
+control() { dc exec -T community supervisorctl "$@"; }
+database() { dc exec -T community /app/deploy/database "$@"; }
 image_ready() {
-  docker image inspect "$image" >/dev/null 2>&1 && return
-  if [ -f image.tar.gz ]; then docker load -i image.tar.gz; else docker pull "$image"; fi
+  if ! docker image inspect "$image" >/dev/null 2>&1; then
+    if [ -f image.tar.gz ]; then docker load -i image.tar.gz; else docker pull "$image"; fi
+  fi
   docker image inspect "$image" >/dev/null || fail "The selected release image is unavailable."
+  [ "$(docker image inspect -f '{{ index .Config.Labels "org.tracegenie.packaging" }}' "$image")" = single-container-v1 ] || fail "This installer requires a single-container Community image. Use the 0.1 installer to back up a legacy installation, then restore here."
 }
 require_config() {
   [ -f .env ] || fail "Run ./tracegenie install first."
+  [ "$(read_key COMMUNITY_PACKAGING)" = single-container-v1 ] || fail "This is a legacy installation. Keep its original installer and migrate through backup/restore into a new directory."
   image=$(read_key COMMUNITY_IMAGE)
   [ -n "$image" ] || fail "Missing COMMUNITY_IMAGE in .env."
 }
 start() {
-  dc up -d --wait --wait-timeout 180 postgres || return $?
-  dc run --rm --no-deps migrate || return $?
-  dc up -d --wait --wait-timeout 180 app worker gateway || return $?
+  dc up -d --wait --wait-timeout 240 community || return $?
   printf 'Ready: %s\n' "$(read_key PUBLIC_URL)"
 }
 backup() {
+  dc exec -T community node /app/deploy/healthcheck.mjs || fail "Start a healthy installation before backing up."
   mkdir -p backups
   stamp=$(date -u +%Y%m%dT%H%M%SZ)-$$
   temp="backups/.partial-$stamp"
   mkdir "$temp"
-  dc stop app worker
-  # A failed backup must not leave a previously running installation stopped.
-  trap 'dc up -d app worker >/dev/null 2>&1 || true' EXIT
-  dc exec -T postgres pg_dump -U community -d community --format=custom > "$temp/database.dump"
-  dc run --rm --no-deps --user root --entrypoint tar app -C /data/uploads -cf - . > "$temp/uploads.tar"
+  # Install the trap before stopping any service; a partial stop must also recover.
+  trap 'result=$?; control start app worker gateway >/dev/null 2>&1 || true; exit "$result"' EXIT
+  control stop gateway worker app
+  database dump > "$temp/database.dump"
+  dc exec -T community tar -C /data/uploads -cf - . > "$temp/uploads.tar"
   cp .env "$temp/.env"
-  docker run --rm --network none --user "$(id -u):$(id -g)" -v "$PWD/$temp:/backup" "$image" node deploy/archive.mjs create /backup
+  docker run --rm --network none --user "$(id -u):$(id -g)" -v "$PWD/$temp:/backup" "$image" node /app/deploy/archive.mjs create /backup
   chmod -R go-rwx "$temp"
   mv "$temp" "backups/$stamp"
+  control start app worker gateway
+  start
   trap - EXIT
-  dc up -d --wait --wait-timeout 180 app worker
   printf 'Backup: %s/backups/%s\n' "$PWD" "$stamp"
 }
 case "$command" in
   help|--help|-h)
     cat <<'HELP'
-TraceGenie Community
+TraceGenie Community — one container
   ./tracegenie install [--url http://localhost:8088] [--name tracegenie-community] [--image IMAGE]
   ./tracegenie start | stop | status | logs | setup-code
   ./tracegenie backup
   ./tracegenie upgrade --image VERSIONED_IMAGE
-  ./tracegenie restore BACKUP_DIRECTORY [--url URL] [--name NEW_NAME]
-Install and restore use a new directory. Restore refuses an existing database.
+  ./tracegenie restore BACKUP_DIRECTORY [--url URL] [--name NEW_NAME] [--image IMAGE]
+Install and restore use a new directory. Restore refuses existing volumes.
 Public installations require an HTTPS domain pointing at this server and ports 80/443.
 Local installations bind to loopback. Data and settings survive stop and upgrade.
+Legacy 0.1 backups can be restored into this version; do not overwrite a legacy installation.
 HELP
     ;;
   install|restore)
@@ -72,7 +78,6 @@ HELP
     url=http://localhost:8088
     name=tracegenie-community
     image=tracegenie-community:local
-    if [ -n "$source_backup" ]; then image=$(read_key COMMUNITY_IMAGE "$source_backup/.env"); fi
     while [ $# -gt 0 ]; do
       [ $# -ge 2 ] || fail "Option $1 needs a value."
       case "$1" in --url) url=$2;; --name) name=$2;; --image) image=$2;; *) fail "Unknown option: $1";; esac
@@ -82,24 +87,33 @@ HELP
     if [ -n "$(docker volume ls -q --filter "label=com.docker.compose.project=$name")" ]; then
       fail "Installation name $name already owns Docker volumes. Use start in its directory, or choose a different --name."
     fi
-    # Atomic configuration generation; an interrupted install can be retried with start.
+    # Check backup integrity before creating configuration, containers or volumes.
     if [ "$command" = restore ]; then
-      docker run --rm --network none --user "$(id -u):$(id -g)" -v "$source_backup:/backup:ro" "$image" node deploy/archive.mjs verify /backup
-      docker run --rm --network none -i "$image" node deploy/configure.mjs "$url" "$name" "$image" restore < "$source_backup/.env" > .env.pending
+      docker run --rm --network none --user "$(id -u):$(id -g)" -v "$source_backup:/backup:ro" "$image" node /app/deploy/archive.mjs verify /backup
+      docker run --rm --network none -i "$image" node /app/deploy/configure.mjs "$url" "$name" "$image" restore < "$source_backup/.env" > .env.pending
+      printf 'TRACEGENIE_MAINTENANCE=1\n' >> .env.pending
     else
-      docker run --rm --network none "$image" node deploy/configure.mjs "$url" "$name" "$image" > .env.pending
+      docker run --rm --network none "$image" node /app/deploy/configure.mjs "$url" "$name" "$image" > .env.pending
     fi
     mv .env.pending .env
     dc config --quiet
     if [ "$command" = restore ]; then
-      dc up -d --wait --wait-timeout 180 postgres
-      tables=$(dc exec -T postgres psql -U community -d community -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
-      [ "$tables" = 0 ] || fail "Restore refused: this Docker installation name already has a database. Choose a new directory and --name."
-      dc run --rm --no-deps --user root --entrypoint sh app -c 'test -z "$(ls -A /data/uploads)"' || fail "Restore refused: upload volume is not empty."
-      dc exec -T postgres pg_restore -U community -d community --no-owner --no-acl --exit-on-error --single-transaction < "$source_backup/database.dump"
-      dc run --rm --no-deps -T --user root --entrypoint tar app -C /data/uploads -xf - < "$source_backup/uploads.tar"
-      dc run --rm --no-deps migrate
-      dc run --rm --no-deps app node deploy/restore-origin.mjs "$(read_key PUBLIC_URL "$source_backup/.env")"
+      dc up -d community
+      ready=0
+      for ((attempt=0; attempt<120; attempt++)); do
+        if database ready >/dev/null 2>&1; then ready=1; break; fi
+        sleep 1
+      done
+      [ "$ready" = 1 ] || fail "Restore database did not become ready. Maintenance mode remains active."
+      [ "$(database tables)" = 0 ] || fail "Restore refused: database is not empty."
+      dc exec -T community sh -c 'test -z "$(ls -A /data/uploads)"' || fail "Restore refused: uploads are not empty."
+      database restore < "$source_backup/database.dump"
+      dc exec -T community tar -C /data/uploads -xf - < "$source_backup/uploads.tar"
+      dc exec -T community chown -R node:node /data/uploads
+      dc exec -T --user node community /app/deploy/run-service migrate
+      dc exec -T --user node community /app/deploy/run-service restore-origin "$(read_key PUBLIC_URL "$source_backup/.env")"
+      sed '/^TRACEGENIE_MAINTENANCE=/d' .env > .env.pending
+      mv .env.pending .env
     fi
     start
     if [ "$command" = install ]; then
@@ -112,8 +126,8 @@ HELP
     case "$command" in
       start) image_ready; start;;
       stop) dc stop;;
-      status) dc ps;;
-      logs) dc logs --tail 100 -f app worker gateway;;
+      status) dc ps --all; if [ -n "$(dc ps -q community)" ]; then control status; fi;;
+      logs) dc logs --tail 100 -f community;;
       setup-code) printf '%s\n' "$(read_key COMMUNITY_SETUP_TOKEN)";;
       backup) backup;;
       upgrade)
@@ -121,16 +135,18 @@ HELP
         candidate=$2
         case "$candidate" in *:latest|*:local) fail "Upgrade requires a versioned tag or digest.";; esac
         case "$candidate" in *@sha256:*|*:*) ;; *) fail "Upgrade requires an explicit version tag or digest.";; esac
-        # Validate before pulling or touching the running installation.
-        docker run --rm --network none "$image" node deploy/configure.mjs "$(read_key PUBLIC_URL)" "$(read_key COMPOSE_PROJECT_NAME)" "$candidate" >/dev/null
-        docker image inspect "$candidate" >/dev/null 2>&1 || docker pull "$candidate"
+        docker run --rm --network none "$image" node /app/deploy/configure.mjs "$(read_key PUBLIC_URL)" "$(read_key COMPOSE_PROJECT_NAME)" "$candidate" >/dev/null
+        current_image=$image
+        image=$candidate
+        image_ready
+        image=$current_image
         backup
-        dc stop app worker
+        dc stop community
         cp .env .env.before-upgrade
         awk -v image="$candidate" '/^COMMUNITY_IMAGE=/{print "COMMUNITY_IMAGE=" image; next} {print}' .env > .env.pending
         mv .env.pending .env
         image=$candidate
-        if ! start; then fail "Upgrade failed. Services may be unavailable. Keep the pre-upgrade backup and inspect ./tracegenie logs. Restore the backup into a new installation to recover."; fi
+        if ! start; then fail "Upgrade failed. Keep the pre-upgrade backup and inspect ./tracegenie logs. Restore into a new installation to recover."; fi
         ;;
     esac
     ;;

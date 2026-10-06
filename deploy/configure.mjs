@@ -18,8 +18,8 @@ try {
   const port = Number(url.port || (url.protocol === "https:" ? 80 : 80));
   if (port >= 65535) throw new Error("Choose a port below 65535.");
   const values = {
-    COMPOSE_PROJECT_NAME: project, COMMUNITY_IMAGE: image, PUBLIC_URL: url.origin,
-    SITE_ADDRESS: url.protocol === "https:" ? url.hostname : "http://:80",
+    COMMUNITY_PACKAGING: "single-container-v1", COMPOSE_PROJECT_NAME: project, COMMUNITY_IMAGE: image, PUBLIC_URL: url.origin,
+    SITE_ADDRESS: url.protocol === "https:" ? url.hostname : "http://:8080",
     BIND_ADDRESS: local ? "127.0.0.1" : "0.0.0.0", HTTP_PORT: String(port),
     HTTPS_PORT: url.protocol === "https:" ? "443" : String(port + 1),
     COMMUNITY_DB_PASSWORD: secret("COMMUNITY_DB_PASSWORD"), JWT_SECRET: secret("JWT_SECRET"),

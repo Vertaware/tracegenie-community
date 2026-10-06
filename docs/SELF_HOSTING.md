@@ -1,45 +1,55 @@
 # Self-host TraceGenie Community
 
-One installation contains one project, the original consumer app, secure reporter pages, hosted feedback form, and widget. The application and worker run from the same versioned image; PostgreSQL and uploaded files use persistent Docker volumes.
+The 0.2 packaging runs the application, email worker, PostgreSQL 17 and Caddy in **one container**, with one persistent volume. It contains one project, the consumer app, reporter pages, hosted form and widget. It can run alongside your app on an existing Docker host, or be included in a rebuilt application image using the [shared-container guide](SHARED_CONTAINER.md).
+
+Version 0.1.0 uses the previous four-container layout. These single-container instructions apply to version 0.2.0 or later. Existing 0.1 installations should use the migration procedure below.
 
 ## Install from a release archive
 
-Install Docker with Compose v2 and a Bash terminal (Linux, macOS, or Windows with WSL2). Start Docker. Download the installer archive and its `.sha256` file from [GitHub Releases](https://github.com/Vertaware/tracegenie-community/releases). Choose `aarch64` for ARM64 (including Apple Silicon), or `x86_64` for AMD64/Intel, as reported by `docker info --format '{{.Architecture}}'`. Verify the checksum, extract the archive, and open that directory in a terminal. No Node, npm, source checkout, database account or external mail account is needed on the host.
+Install Docker with Compose v2 and a Bash terminal (Linux, macOS, or Windows with WSL2). Choose `aarch64` for ARM64 or `x86_64` for AMD64/Intel, as reported by `docker info --format '{{.Architecture}}'`. Download the matching installer archive and checksum from [GitHub Releases](https://github.com/Vertaware/tracegenie-community/releases).
 
-For example, on ARM64:
+For example, using a 0.2.0 ARM64 archive:
 
 ```sh
-shasum -a 256 -c tracegenie-community-0.1.0-aarch64.tar.gz.sha256
-tar -xzf tracegenie-community-0.1.0-aarch64.tar.gz
-cd tracegenie-community-0.1.0-aarch64
+shasum -a 256 -c tracegenie-community-0.2.0-aarch64.tar.gz.sha256
+tar -xzf tracegenie-community-0.2.0-aarch64.tar.gz
+cd tracegenie-community-0.2.0-aarch64
 ./tracegenie install
 ```
 
-On Linux, `sha256sum -c FILE.sha256` also verifies the checksum. Substitute `x86_64` in the filename for AMD64. While the repository is private, download assets through an authenticated GitHub session.
+On Linux, `sha256sum -c FILE.sha256` also verifies the checksum. Substitute `x86_64` for AMD64. No host Node installation, source checkout, separate database service or registry account is needed: the archive includes the combined image. Email delivery still needs your Resend or SMTP provider.
 
-Open http://localhost:8088. The installer displays a private setup code. Enter it, your real name/email/password and project name. It works only before the first administrator exists. Continue through the existing Email and Installation settings. Email can be configured later, but external email delivery, password recovery and reporter access codes need a working provider. Reports can still be captured without email.
+Open http://localhost:8088. Enter the private setup code printed by the installer and create your administrator account and project. Setup closes after the first administrator is created. Configure Email and Installation in Settings; reports can be captured before email is configured, but external delivery, password recovery and reporter access codes need a working provider.
 
-The setup code is stored in the private `.env`; `./tracegenie setup-code` shows it again. It is never put in a URL, browser bundle or public API response. Existing installations cannot be re-claimed after restart. Keep `.env` with your backups: it includes the key needed to decrypt saved email credentials.
+The installer generates private `.env` configuration; `./tracegenie setup-code` shows its setup code again. Keep `.env` with your backups: it contains the encryption key for saved email credentials. Never put it in a public repository.
+
+## Existing server or application container
+
+You do not need a dedicated server: use an existing Docker host with sufficient resources and available ports. The standard installer runs one additional TraceGenie container. It does not install reporting into your application's process.
+
+To put both products in the **same container**, rebuild your application image from the Community base and register its startup command with Supervisor. The [shared-container example](SHARED_CONTAINER.md) documents the tested Node example, ports, runtime requirements and backup boundaries. This involves rebuilding/redeploying your image, not modifying a running container.
 
 ## Public HTTPS installation
 
-Point a domain at your server and allow incoming ports 80 and 443. In a fresh release directory:
+Point a domain at the server and make ports 80 and 443 available. In a fresh release directory:
 
 ```sh
 ./tracegenie install --url https://feedback.example.com --name my-feedback
 ```
 
-Caddy requests and renews HTTPS certificates. API, consumer pages, reporter pages and widget assets share this address; no per-customer image rebuild is necessary. The database has no published port. Local installs bind only to 127.0.0.1. A public installation deliberately binds ports 80/443 on all interfaces. Domain/DNS and certificate issuance must be verified on your own server; local tests do not prove public TLS issuance.
+Caddy requests and renews certificates. API, consumer pages, reporter pages and widget assets share this address. PostgreSQL and the API listen only inside the container. Local installations publish gateway ports on 127.0.0.1; public installations publish ports 80/443 on all interfaces. The image uses ports 8080/8443 internally so the gateway runs without root privileges. Public DNS, external email delivery and certificate issuance require verification on your own deployment.
 
-For another local port use `--url http://localhost:8090`. The adjacent port is reserved for the gateway's HTTPS listener. Each installation needs its own directory and unique `--name`. Reusing a Docker installation name is refused.
+Use `--url http://localhost:8090` for a different local port. The adjacent port is reserved for HTTPS. Each installation needs a fresh directory and unique `--name`; reusing a name that owns Docker volumes is refused. The public installer expects to own host ports 80/443. If another gateway already uses them, adapt and test your existing proxy routing instead of stopping another application or claiming those ports.
 
 ## Widget and hosted form
 
-Open Settings → Installation. Add your website's exact origin, generate a project secret, and follow the existing frontend and backend snippets. Keep the project secret on your website's server. The normal widget requires that server-side session-token endpoint; static sites need a serverless endpoint. The hosted feedback URL works without modifying your website:
+Open Settings → Installation. Add your app's exact origin and follow the existing frontend and backend snippets. Keep the project secret on your app's server. The widget needs a server-side session-token endpoint; static sites need a serverless endpoint. Sharing a server or container does not remove this integration step.
+
+The hosted form works without changing your app:
 
 `https://feedback.example.com/feedback/?projectKey=community&mode=feedback`
 
-The script bundle is served at `/widget/embed.js`. Submit a real test report and check it in Issues before considering the integration verified.
+Widget assets are served at `/widget/embed.js`. Submit a report and check its screenshot and replies before considering your integration verified.
 
 ## Start, stop and diagnose
 
@@ -50,7 +60,9 @@ The script bundle is served at `/widget/embed.js`. Submit a real test report and
 ./tracegenie stop
 ```
 
-Start waits for PostgreSQL, applies migrations, and waits for API/storage readiness and a live worker processing loop. Containers restart after a process exit or Docker restart. An unhealthy container is reported by Docker; health status alone does not restart a hung process. If startup fails, fix the reported cause and rerun start. Do not remove Docker volumes to troubleshoot a startup failure.
+Supervisor starts PostgreSQL, applies migrations before the API starts, waits for API readiness before running the worker, and manages the gateway. It restarts exited services. Shutdown stops the web services before PostgreSQL and gives the database time to stop cleanly. The health check verifies all supervised processes, database/API readiness, the gateway and a recent worker processing heartbeat. A hung process is reported as unhealthy; Docker does not automatically restart a container merely because its health check fails.
+
+If startup fails, inspect the logs, fix the cause and retry `start`. Never delete volumes to troubleshoot startup. The named volume mounts at `/var/lib/postgresql/data`; `/data` inside the image points there. It contains `postgres/`, `uploads/` and `caddy/`. Retain both this volume and `.env` when replacing the container. Do not use `docker compose down --volumes` on an installation you want to keep.
 
 ## Back up and restore
 
@@ -58,32 +70,46 @@ Start waits for PostgreSQL, applies migrations, and waits for API/storage readin
 ./tracegenie backup
 ```
 
-This briefly stops application writes and the worker, captures a consistent database dump, uploads and private `.env`, writes a checksum manifest, and resumes services. Copy the completed backup directory to secure storage on another machine. Partial backup directories are not restorable. Backups contain credentials and customer data.
+This briefly stops TraceGenie's web and worker processes, captures a consistent PostgreSQL dump and attachments, copies `.env`, writes a checksum manifest, and resumes service. The container and database remain running. Partial backups are not restorable. Copy the completed directory to secure storage on another machine. The backup includes credentials and customer reports; it excludes gateway certificates (reissued on a public deployment) and any separately bundled application's data.
 
-Restore into a fresh release directory using a NEW installation name and an available address:
+Restore into a fresh release directory with a new installation name and available address:
 
 ```sh
 ./tracegenie restore /secure/path/to/backup --url http://localhost:8090 --name feedback-restored
 ```
 
-Restore verifies checksums and refuses existing Docker volumes or a nonempty database. It preserves accounts, reports, uploads, JWT and email encryption keys; it replaces only the previous first-party origin if the address changed. Customer website origins remain configured. Reconfigure DNS or website snippets if the public address changes. Restoring does not send a test email, but the restarted worker resumes any pending notifications, so keep a recovery environment isolated from external SMTP if you do not want delivery.
+The installer verifies checksums before creating resources and refuses existing volumes or a nonempty database. It starts only the database during restore, loads the backup, applies migrations and updates the first-party origin before starting the web services. Accounts, reports, uploads, JWT and email encryption keys are preserved; customer website origins remain configured. Use `--image YOUR_CUSTOM_IMAGE:VERSION` for a combined app image.
 
-## Upgrade
+The worker resumes queued notifications once restoration completes. Isolate a recovery environment from external email if it must not deliver them. A failed restore remains in maintenance mode; inspect logs and recover into another fresh installation rather than forcing the partial data into service.
 
-Obtain the next versioned application image (a release archive includes it; load with `docker load -i image.tar.gz`) and retain any supplied updated operator files. Run from the existing installation directory:
+## Upgrade a single-container installation
 
-```sh
-./tracegenie upgrade --image tracegenie-community:0.1.1
-```
-
-The command validates the image reference, obtains the image, takes a backup, stops application writes, applies migrations and waits for readiness. Data volumes and `.env` secrets are preserved. Use an explicit version or digest, never `latest`. Follow release notes for changes to Compose or the installer. A failed migration does not trigger an automatic downgrade: recover the pre-upgrade backup in a fresh installation with the earlier image.
-
-## Build a release (maintainers)
+Load the desired version's `image.tar.gz` and use any updated operator files supplied in its release. From the existing installation directory:
 
 ```sh
-scripts/package-release.sh 0.1.0
+./tracegenie upgrade --image tracegenie-community:0.2.1
 ```
 
-This builds from source inside Docker and writes an architecture-specific archive and SHA-256 checksum under `.local/releases/`. The archive includes the app image, PostgreSQL and Caddy images, installer, Compose configuration, this guide, license notices and the matching application source in `source.tar.gz`. The packager requires Git and creates a source snapshot before building, so the archived source matches the build input; reusing an existing image is not supported. Publish `source.tar.gz` alongside any separately distributed app image or widget bundle. See the [licensing guide](LICENSING.md). The `Release` workflow builds on native ARM64 and AMD64 runners, tests each archive with `scripts/test-release.sh`, and publishes a prerelease only after both pass. The workflow runs when a version tag such as `v0.1.0` is pushed. The packaging script itself does not publish anything. Keep the repository private until the public launch is approved.
+This is an example future version. Use an actually available version or digest. The command validates the image packaging, backs up, stops the container, replaces it, applies migrations and waits for readiness. The data volume and secrets remain. Never use `latest`. A failed migration is not automatically downgraded: restore the pre-upgrade backup into a fresh installation with a compatible image. PostgreSQL major-version changes require a documented migration; do not reuse raw database files across majors.
 
-The README's npm commands remain the developer workflow. This Docker workflow never uses or changes that development database, ports or credentials.
+For a custom app image, rebuild that image using the new Community version and upgrade to your custom tag. A stock image does not contain your application.
+
+## Migrate from the 0.1 four-container installation
+
+Keep the original 0.1 directory and its operator files intact. Run its `./tracegenie backup`, then `./tracegenie stop` when ready to cut over. Extract the 0.2 archive into a **new directory** and restore that backup using a **new name** and an available URL. The new installer reads the old logical backup format and creates the single-container volume. It does not rename, mount or overwrite the old database volume.
+
+Verify login, reports, screenshots, replies and email on the restored installation before changing widget URLs or retiring the old installation. Keep the original backup and stopped installation for recovery. Copying new Compose/operator files over a live 0.1 installation is not the migration procedure.
+
+## Build and verify a release (maintainers)
+
+```sh
+scripts/package-release.sh 0.2.0
+LEGACY_RELEASE_ARCHIVE=/path/to/tracegenie-community-0.1.0-aarch64.tar.gz \
+  scripts/test-release.sh .local/releases/tracegenie-community-0.2.0-aarch64.tar.gz
+```
+
+The packager snapshots shareable source before building and writes one architecture-specific image archive, its SHA-256 checksum, installer, Compose file, shared-container example, guide, license notices and matching `source.tar.gz`. No reused prebuilt app image is accepted. See [licensing](LICENSING.md).
+
+Release tests exercise fresh setup, reports/screenshots, local SMTP, replies, restart, container replacement, worker recovery, backup, restore, upgrades and the bundled shared-container example. With `LEGACY_RELEASE_ARCHIVE`, they also create and migrate a disposable 0.1 installation and verify the original remains intact. The workflow runs this on native ARM64 and AMD64 runners before publishing a tagged release. Running the local packager does not publish anything.
+
+The source development workflow (`npm run dev`) is separate and unchanged.

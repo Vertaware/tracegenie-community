@@ -1,4 +1,9 @@
+{
+  admin 127.0.0.1:2019
+  http_port 8080
+  https_port 8443
+}
 {$SITE_ADDRESS} {
   encode zstd gzip
-  reverse_proxy app:4310
+  reverse_proxy 127.0.0.1:4310
 }

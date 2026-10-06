@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "${1:-serve}" != serve ]; then exec "$@"; fi
+umask 077
+. /app/deploy/runtime-env
+install -d -m 700 -o postgres -g postgres "$PGDATA"
+install -d -m 700 -o node -g node /data/uploads /data/caddy /data/caddy/data /data/caddy/config
+install -d -m 700 /run/tracegenie
+rm -f /tmp/tracegenie-worker-ready
+exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf

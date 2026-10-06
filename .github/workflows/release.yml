@@ -32,7 +32,17 @@ jobs:
         run: |
           version="${RELEASE_TAG#v}"
           scripts/package-release.sh "$version"
-      - name: Verify installation, mail, reporter replies and recovery
+      - name: Download the previous release for migration verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          arch="$(docker info --format '{{.Architecture}}')"
+          mkdir -p "$RUNNER_TEMP/community-legacy"
+          gh release download v0.1.0 --repo "$GITHUB_REPOSITORY" \
+            --pattern "tracegenie-community-0.1.0-$arch.tar.gz*" --dir "$RUNNER_TEMP/community-legacy"
+          (cd "$RUNNER_TEMP/community-legacy" && sha256sum -c "tracegenie-community-0.1.0-$arch.tar.gz.sha256")
+          echo "LEGACY_RELEASE_ARCHIVE=$RUNNER_TEMP/community-legacy/tracegenie-community-0.1.0-$arch.tar.gz" >> "$GITHUB_ENV"
+      - name: Verify installation, recovery, upgrades, shared app and legacy migration
         run: scripts/test-release.sh .local/releases/*.tar.gz
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
@@ -59,11 +69,11 @@ jobs:
           pattern: release-*
           path: release-assets
           merge-multiple: true
-      - name: Publish verified archives as an early release
+      - name: Publish verified release archives
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" --verify-tag --prerelease \
+          gh release create "$RELEASE_TAG" --verify-tag --latest \
             --title "TraceGenie Community $RELEASE_TAG" \
             --notes-file docs/RELEASE_NOTES.md release-assets/*

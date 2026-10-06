@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-}" in
+  ready) exec gosu postgres pg_isready -h 127.0.0.1 -U community -d community;;
+  tables) exec gosu postgres psql -U community -d community -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'";;
+  dump) exec gosu postgres pg_dump -U community -d community --format=custom;;
+  restore) exec gosu postgres pg_restore -U community -d community --no-owner --no-acl --exit-on-error --single-transaction;;
+  *) echo 'Expected ready, tables, dump or restore.' >&2; exit 1;;
+esac

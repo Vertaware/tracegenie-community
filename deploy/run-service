@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd /app
+. /app/deploy/runtime-env
+case "$1" in
+  app)
+    for ((i=0; i<120; i++)); do
+      if psql -h 127.0.0.1 -U community -d community -Atc 'SELECT 1' >/dev/null 2>&1; then
+        node node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma
+        exec node apps/api/dist/server.js
+      fi
+      sleep 1
+    done
+    echo 'Database did not become ready.' >&2; exit 1
+    ;;
+  worker)
+    for ((i=0; i<120; i++)); do
+      if node -e "fetch('http://127.0.0.1:4310/ready',{signal:AbortSignal.timeout(2000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+        exec node apps/api/dist/worker.js
+      fi
+      sleep 1
+    done
+    echo 'Application did not become ready.' >&2; exit 1
+    ;;
+  migrate) exec node node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma;;
+  restore-origin) exec node deploy/restore-origin.mjs "$2";;
+  *) echo 'Expected app or worker.' >&2; exit 1;;
+esac

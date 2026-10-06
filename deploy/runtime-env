@@ -1,0 +1,14 @@
+# Sourced by the container entrypoint and maintenance commands.
+for key in COMMUNITY_DB_PASSWORD JWT_SECRET EMAIL_SETTINGS_ENCRYPTION_KEY COMMUNITY_SETUP_TOKEN; do
+  [[ "${!key:-}" =~ ^[a-f0-9]{64}$ ]] || { echo "Missing or invalid $key; use the installer-generated configuration." >&2; exit 1; }
+done
+: "${PUBLIC_URL:?Set PUBLIC_URL using the installer}"
+: "${SITE_ADDRESS:?Set SITE_ADDRESS using the installer}"
+export POSTGRES_PASSWORD="$COMMUNITY_DB_PASSWORD" PGPASSWORD="$COMMUNITY_DB_PASSWORD"
+export POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256 --auth-local=trust"
+export POSTGRES_HOST_AUTH_METHOD=scram-sha-256
+export DATABASE_URL="postgresql://community:$COMMUNITY_DB_PASSWORD@127.0.0.1:5432/community"
+export API_BASE_URL="$PUBLIC_URL" ADMIN_APP_URL="$PUBLIC_URL" DEMO_APP_URL="$PUBLIC_URL/feedback/"
+export CORS_ORIGINS="$PUBLIC_URL" PUBLIC_APP_ORIGINS="$PUBLIC_URL" TRUST_PROXY_HOPS=1
+export TRACEGENIE_WEB_AUTOSTART=true
+if [ "${TRACEGENIE_MAINTENANCE:-0}" = 1 ]; then export TRACEGENIE_WEB_AUTOSTART=false; fi

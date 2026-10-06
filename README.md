@@ -1,13 +1,21 @@
 <div align="center">
   <img src="apps/admin/public/tracegenie-logo-official.png" alt="TraceGenie" width="240" />
-  <h1>Your users found the bug. Give them a way to show you.</h1>
-  <p><strong>Self-hosted bug reporting, screenshots, and conversations for the apps you ship.</strong></p>
-  <p><a href="#get-started">Get started</a> · <a href="docs/SELF_HOSTING.md">Self-hosting</a> · <a href="docs/EMAIL.md">Email setup</a> · <a href="CONTRIBUTING.md">Contribute</a></p>
+  <h1>You built the app. Give your team a way to report what breaks.</h1>
+  <p><strong>Self-hosted bug reporting for internal tools and apps built with AI.</strong></p>
+  <p><a href="#get-started">Get started</a> · <a href="docs/SELF_HOSTING.md">Self-hosting</a> · <a href="docs/EMAIL.md">Email setup</a> · <a href="https://traceitgenie.com">Hosted option</a> · <a href="CONTRIBUTING.md">Contribute</a></p>
 </div>
+
+You have built an approval tool, an inventory app or a staff portal. Now your colleagues need a way to show you a wrong total, a missing record or a broken button.
 
 TraceGenie Community puts a report button inside your app. Users explain what went wrong, attach a screenshot, and send useful context straight to your issue inbox. You triage it, ask a follow-up question, and let them know when it is fixed.
 
-**One project. Your server. A complete path from “this feels broken” to resolved.**
+**Prefer a hosted option?** We also offer hosted TraceGenie at [traceitgenie.com](https://traceitgenie.com). Choose Community to run it yourself, or explore the hosted service if you prefer us to manage the hosting.
+
+**One project. One container. A complete path from “this feels broken” to resolved.**
+
+Run TraceGenie on your existing Docker host, or rebuild your app’s image to [run both in the same container](docs/SHARED_CONTAINER.md). The included PostgreSQL database, worker and gateway are managed together. You still provide persistent storage and an email provider for delivery.
+
+*Single-container packaging requires version 0.2.0 or later. Version 0.1.0 uses the previous four-container setup.*
 
 ![Report a problem from inside your app with the TraceGenie widget](docs/images/report-form.png)
 
@@ -54,7 +62,7 @@ TraceGenie's reason to exist is the focused reporting and follow-up experience. 
 
 You need **Docker with Compose v2** and a Bash terminal. Linux, macOS, and Windows with WSL2 are supported host environments; use the release asset matching your Docker CPU architecture.
 
-1. Download the installer archive and its `.sha256` file from [Releases](https://github.com/Vertaware/tracegenie-community/releases).
+1. Download the **0.2.0 or later** installer archive for your Docker architecture and its `.sha256` file from [Releases](https://github.com/Vertaware/tracegenie-community/releases).
 2. Verify the checksum, extract the archive, and open its directory.
 3. Run:
 
@@ -62,9 +70,13 @@ You need **Docker with Compose v2** and a Bash terminal. Linux, macOS, and Windo
 ./tracegenie install
 ```
 
-Open **http://localhost:8088**, enter the private setup code printed in your terminal, and create your administrator account and project. No Node installation or external database account is needed. The archive includes the application and supporting container images.
+Open **http://localhost:8088**, enter the private setup code printed in your terminal, and create your administrator account and project. No Node installation or external database account is needed. The 0.2 archive includes one image with the application, PostgreSQL, worker and gateway. Choose available ports if your server already runs other applications.
 
 For a public HTTPS address, backup/restore, upgrades, architecture details, and checksum commands, see the [self-hosting guide](docs/SELF_HOSTING.md).
+
+### Include it in your application container
+
+Use the Community image as your final Docker base, copy in your built app, and register its startup command with the included process manager. The [shared-container guide and example](docs/SHARED_CONTAINER.md) show how to rebuild and run both together. The example uses Node; other runtimes need their own dependencies and validation. This does not automatically add the widget to your app.
 
 ### Develop from source
 
@@ -113,7 +125,7 @@ Email enables notifications, password recovery, and reporter access codes. You c
 - Your own hosting and email provider, with Docker installation, backups, restores, and upgrades.
 - The existing TraceGenie components and [motion design system](docs/MOTION_SYSTEM.md).
 
-Community does not include multi-project SaaS management, billing, external ticket integrations, surveys, or an AI/MCP service. See [release notes](docs/RELEASE_NOTES.md) for the first release's verification and limits.
+Community does not include multi-project SaaS management, billing, external ticket integrations, surveys, or an AI/MCP service. See [release notes](docs/RELEASE_NOTES.md) for verification details and deployment limits.
 
 ## Contribute
 
